@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg-page: #F5F4F1;
+  --card: #FFFFFF;
+  --card-alt: #F0EFEb;
+  --border: rgba(0,0,0,0.08);
+  --text: #1A1A1A;
+  --text-muted: #6B6B6B;
+  --accent: #1D9E75;
+  --accent-light: rgba(29,158,117,0.1);
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-page: #0F0F0F;
+    --card: #1A1A1A;
+    --card-alt: #242424;
+    --border: rgba(255,255,255,0.08);
+    --text: #F0F0F0;
+    --text-muted: #888;
+    --accent: #1D9E75;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+input[type=text], input[type=email], input[type=password], input[type=number], select {
+  font-family: var(--font);
+  transition: border-color 0.15s;
+}
+input:focus, select:focus { border-color: var(--accent) !important; }
+
+button { font-family: var(--font); }

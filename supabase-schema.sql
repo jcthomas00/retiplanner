@@ -1,0 +1,85 @@
+-- Run this in your Supabase SQL editor:
+-- https://supabase.com/dashboard → your project → SQL Editor
+
+-- Enable Row Level Security on all tables
+-- Users can only see and modify their own data
+
+-- ── Migration (run if upgrading from earlier schema) ─────────────────────────
+-- ALTER TABLE assets ADD COLUMN IF NOT EXISTS withdrawal_age INTEGER;
+-- (income_sources table below is new — just run the CREATE TABLE block)
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS assets (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('retirement','taxable','real_estate','cash','other')),
+  balance NUMERIC NOT NULL DEFAULT 0,
+  color TEXT NOT NULL DEFAULT '#1D9E75',
+  withdrawal_age INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS income_sources (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('social_security','pension','annuity','other')),
+  monthly_amount NUMERIC NOT NULL DEFAULT 0,
+  base_age INTEGER NOT NULL DEFAULT 67,
+  start_age INTEGER NOT NULL DEFAULT 67,
+  cola_pct NUMERIC NOT NULL DEFAULT 0,
+  benefit_table JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS contributions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  amount NUMERIC NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS projection_params (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  age INTEGER NOT NULL DEFAULT 35,
+  ret_age INTEGER NOT NULL DEFAULT 65,
+  pre_return NUMERIC NOT NULL DEFAULT 7,
+  post_return NUMERIC NOT NULL DEFAULT 4,
+  inflation NUMERIC NOT NULL DEFAULT 3,
+  annual_withdrawal NUMERIC NOT NULL DEFAULT 80000,
+  volatility NUMERIC NOT NULL DEFAULT 10,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Row Level Security
+ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contributions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE projection_params ENABLE ROW LEVEL SECURITY;
+ALTER TABLE income_sources ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own assets" ON assets
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users manage own contributions" ON contributions
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users manage own params" ON projection_params
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users manage own income sources" ON income_sources
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Auto-update updated_at
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER assets_updated_at BEFORE UPDATE ON assets FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER params_updated_at BEFORE UPDATE ON projection_params FOR EACH ROW EXECUTE FUNCTION update_updated_at();
