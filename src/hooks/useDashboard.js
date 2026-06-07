@@ -7,19 +7,6 @@ const DEFAULT_PARAMS = {
   inf: 3, withdraw: 80000, vol: 10, sims: 500
 }
 
-const DEFAULT_ASSETS = [
-  { name: '401(k)', type: 'retirement', balance: 185000, color: '#1D9E75' },
-  { name: 'Roth IRA', type: 'retirement', balance: 42000, color: '#0F6E56' },
-  { name: 'Brokerage', type: 'taxable', balance: 73000, color: '#378ADD' },
-  { name: 'Home equity', type: 'real_estate', balance: 210000, color: '#7F77DD' },
-  { name: 'Emergency fund', type: 'cash', balance: 28000, color: '#888780' },
-]
-
-const DEFAULT_CONTRIBS = [
-  { name: '401(k)', amount: 23000 },
-  { name: 'Roth IRA', amount: 7000 },
-  { name: 'Brokerage', amount: 12000 },
-]
 
 export function useDashboard() {
   const { user } = useAuth()
@@ -41,21 +28,8 @@ export function useDashboard() {
         supabase.from('income_sources').select('*').eq('user_id', user.id).order('created_at'),
       ])
 
-      if (assetsRes.data?.length) setAssets(assetsRes.data)
-      else {
-        const seeded = await supabase.from('assets').insert(
-          DEFAULT_ASSETS.map(a => ({ ...a, user_id: user.id }))
-        ).select()
-        if (seeded.data) setAssets(seeded.data)
-      }
-
-      if (contribsRes.data?.length) setContributions(contribsRes.data)
-      else {
-        const seeded = await supabase.from('contributions').insert(
-          DEFAULT_CONTRIBS.map(c => ({ ...c, user_id: user.id }))
-        ).select()
-        if (seeded.data) setContributions(seeded.data)
-      }
+      setAssets(assetsRes.data || [])
+      setContributions(contribsRes.data || [])
 
       if (paramsRes.data) {
         const d = paramsRes.data
