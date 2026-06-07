@@ -68,8 +68,17 @@ export function useDashboard() {
   const addAsset = useCallback(async (asset) => {
     if (!user) return
     setSaving(true)
-    const { data } = await supabase.from('assets')
-      .insert({ ...asset, user_id: user.id }).select().single()
+    const row = {
+      user_id: user.id,
+      name: asset.name,
+      type: asset.type || 'other',
+      balance: Number(asset.balance) || 0,
+      color: asset.color || '#1D9E75',
+      withdrawal_age: asset.withdrawal_age ?? null,
+    }
+    const { data, error } = await supabase.from('assets')
+      .insert(row).select().single()
+    if (error) console.error('addAsset failed:', error.message)
     if (data) setAssets(prev => [...prev, data])
     setSaving(false)
   }, [user])
@@ -90,8 +99,14 @@ export function useDashboard() {
   const addContribution = useCallback(async (contrib) => {
     if (!user) return
     setSaving(true)
-    const { data } = await supabase.from('contributions')
-      .insert({ ...contrib, user_id: user.id }).select().single()
+    const row = {
+      user_id: user.id,
+      name: contrib.name,
+      amount: Number(contrib.amount) || 0,
+    }
+    const { data, error } = await supabase.from('contributions')
+      .insert(row).select().single()
+    if (error) console.error('addContribution failed:', error.message)
     if (data) setContributions(prev => [...prev, data])
     setSaving(false)
   }, [user])
@@ -104,8 +119,20 @@ export function useDashboard() {
 
   const addIncomeSource = useCallback(async (source) => {
     if (!user) return
-    const { data } = await supabase.from('income_sources')
-      .insert({ ...source, user_id: user.id }).select().single()
+    // Explicitly pick only known schema columns so stray Gemini fields don't cause insert errors
+    const row = {
+      user_id: user.id,
+      name: source.name,
+      type: source.type || 'other',
+      monthly_amount: Number(source.monthly_amount) || 0,
+      base_age: source.base_age ?? null,
+      start_age: source.start_age ?? null,
+      cola_pct: Number(source.cola_pct) || 0,
+      benefit_table: source.benefit_table ?? null,
+    }
+    const { data, error } = await supabase.from('income_sources')
+      .insert(row).select().single()
+    if (error) { console.error('addIncomeSource failed:', error.message); return }
     if (data) setIncomeSources(prev => [...prev, data])
   }, [user])
 
