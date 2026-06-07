@@ -1,24 +1,33 @@
+import { useState } from 'react'
 import { Doughnut, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend,
   LineElement, PointElement, LinearScale, CategoryScale, Filler
 } from 'chart.js'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faFileImport, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { fmtK, projectValue } from '../lib/finance'
 import Assets from './Assets'
 import IncomeSources from './IncomeSources'
 import PDFImport from './PDFImport'
-import Collapsible from './Collapsible'
 
 ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale, Filler)
 
-function MetricCard({ label, value, sub, color }) {
+function MetricCard({ label, value, sub, color, onClick, active }) {
   return (
-    <div style={{
-      background: 'var(--card-alt)', borderRadius: 12, padding: '14px 16px'
-    }}>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 600, color: color || 'var(--text)' }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
+    <div
+      onClick={onClick}
+      style={{
+        background: active ? 'var(--accent)' : 'var(--card-alt)',
+        borderRadius: 12, padding: '14px 16px',
+        cursor: onClick ? 'pointer' : 'default',
+        border: active ? '1px solid var(--accent)' : '1px solid transparent',
+        transition: 'background 0.15s',
+      }}
+    >
+      <div style={{ fontSize: 12, color: active ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 600, color: active ? '#fff' : (color || 'var(--text)') }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
     </div>
   )
 }
@@ -29,6 +38,8 @@ export default function Overview({
   addContribution, addIncomeSource, updateIncomeSource, deleteIncomeSource,
   incomeSources, saveParams,
 }) {
+  const [importOpen, setImportOpen] = useState(false)
+
   const yearsToRet = params.retAge - params.age
   const projected = projectValue(yearsToRet, investableBalance, totalContrib, params.ret / 100)
   const retAssets = assets.filter(a => a.type === 'retirement').reduce((s, a) => s + Number(a.balance), 0)
@@ -78,7 +89,6 @@ export default function Overview({
 
   return (
     <div>
-      {/* Side-by-side layout (charts 40% | asset management 60%) on extra-wide screens; stacks below 1600px */}
       <style>{`
         .ov-wide-row { display: block; }
         .ov-wide-row > .ov-col { width: 100%; }
@@ -91,12 +101,52 @@ export default function Overview({
         }
       `}</style>
 
+      {/* Metric cards row — Import card at the end */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: '1.5rem' }}>
         <MetricCard label="Net worth" value={fmtK(totalBalance)} />
         <MetricCard label="Retirement assets" value={fmtK(retAssets)} />
         <MetricCard label="Annual contributions" value={fmtK(totalContrib)} />
         <MetricCard label={`At retirement (${params.retAge})`} value={fmtK(projected)} color="#1D9E75" />
+        <MetricCard
+          label="Import"
+          value={<FontAwesomeIcon icon={faFileImport} />}
+          onClick={() => setImportOpen(o => !o)}
+          active={importOpen}
+        />
       </div>
+
+      {/* Import panel — slides in below metric cards */}
+      {importOpen && (
+        <div style={{
+          background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14,
+          marginBottom: '1.5rem', overflow: 'hidden',
+          animation: 'fadeInUp 0.18s ease',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)',
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Import from PDF
+            </span>
+            <button onClick={() => setImportOpen(false)} style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', fontSize: 15, padding: '0 2px',
+            }}>
+              <FontAwesomeIcon icon={faXmark} />
+            </button>
+          </div>
+          <div style={{ padding: '1.25rem' }}>
+            <PDFImport
+              addAsset={addAsset}
+              addContribution={addContribution}
+              addIncomeSource={addIncomeSource}
+              saveParams={saveParams}
+              existingParams={params}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="ov-wide-row">
         <div className="ov-col ov-col-charts" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -113,16 +163,6 @@ export default function Overview({
               <Doughnut data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } } }, cutout: '62%' }} />
             </div>
           </div>
-
-          <Collapsible title="Import from PDF" defaultOpen={false}>
-            <PDFImport
-              addAsset={addAsset}
-              addContribution={addContribution}
-              addIncomeSource={addIncomeSource}
-              saveParams={saveParams}
-              existingParams={params}
-            />
-          </Collapsible>
         </div>
 
         <div className="ov-col ov-col-manage" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
