@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 
 const LS_KEY = 'retiplanner_gemini_key'
 
-// ── localStorage helpers (used as a fast local cache) ──────────────────────
+// ── localStorage helpers (fast local cache) ────────────────────────────────
 function lsGet() {
   try { return localStorage.getItem(LS_KEY) || '' } catch { return '' }
 }
@@ -18,7 +18,8 @@ async function dbGet(userId) {
     .select('gemini_key')
     .eq('id', userId)
     .single()
-  return data?.gemini_key || ''
+  // Returns null if no row yet — caller must distinguish null vs empty string
+  return data ? (data.gemini_key || '') : null
 }
 
 async function dbSet(userId, key) {
@@ -29,11 +30,13 @@ async function dbSet(userId, key) {
 
 // ── Hook ────────────────────────────────────────────────────────────────────
 export function useGeminiKey() {
-  // Seed from localStorage immediately so UI doesn't flicker on load
   const [key, setKeyState] = useState(lsGet)
   const [syncing, setSyncing] = useState(false)
 
-  // On mount: pull from DB (authoritative source) and refresh local cache
+  // On mount: sync with DB.
+  // - If DB has a key → use it (overrides stale local cache)
+  // - If DB has no row yet but localStorage has a key → push local key up to DB
+  // - If neither has a key → stay empty
   useEffect(() => {
     let cancelled = false
     async function sync() {
@@ -42,10 +45,19 @@ export function useGeminiKey() {
       setSyncing(true)
       try {
         const remote = await dbGet(user.id)
-        if (!cancelled) {
+        if (cancelled) return
+
+        if (remote === null) {
+          // No profile row yet — create one, uploading any locally cached key
+          const local = lsGet()
+          await dbSet(user.id, local)
+          // State already reflects local value, nothing more to do
+        } else if (remote) {
+          // DB has a key — treat as authoritative, refresh local cache
           lsSet(remote)
           setKeyState(remote)
         }
+        // remote === '' means DB row exists but key is blank — keep local state as-is
       } finally {
         if (!cancelled) setSyncing(false)
       }
@@ -56,10 +68,8 @@ export function useGeminiKey() {
 
   const setKey = useCallback(async (newKey) => {
     const trimmed = (newKey || '').trim()
-    // Update local state + cache immediately for snappy UI
     lsSet(trimmed)
     setKeyState(trimmed)
-    // Persist to DB in the background
     const { data: { user } } = await supabase.auth.getUser()
     if (user) await dbSet(user.id, trimmed)
   }, [])
