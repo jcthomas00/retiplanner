@@ -120,10 +120,14 @@ async function analyzeWithGemini(pdfText, apiKey) {
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text
   if (!text) throw new Error('No text response from Gemini')
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('Could not parse JSON from Gemini response')
-
-  return JSON.parse(jsonMatch[0])
+  try {
+    return JSON.parse(text)
+  } catch {
+    // Fallback: extract JSON object if model wrapped it in extra text
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) throw new Error('Could not parse JSON from Gemini response')
+    return JSON.parse(jsonMatch[0])
+  }
 }
 
 const field = (label, value, unit = '') => (
@@ -185,7 +189,7 @@ export default function PDFImport({ addAsset, addContribution, addIncomeSource, 
       }
       for (const i of selected.income) {
         const src = extracted.income_sources[i]
-        await addIncomeSource(src)
+        try { await addIncomeSource(src) } catch (e) { console.error('income source import failed:', e, src) }
       }
       if (selected.params && extracted.projection_params) {
         await saveParams({ ...existingParams, ...extracted.projection_params })
