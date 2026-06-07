@@ -6,6 +6,8 @@ import {
 import { fmtK, projectValue } from '../lib/finance'
 import Assets from './Assets'
 import IncomeSources from './IncomeSources'
+import PDFImport from './PDFImport'
+import Collapsible from './Collapsible'
 
 ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale, Filler)
 
@@ -24,7 +26,8 @@ function MetricCard({ label, value, sub, color }) {
 export default function Overview({
   assets, params, totalBalance, investableBalance, totalContrib,
   addAsset, deleteAsset,
-  incomeSources, addIncomeSource, updateIncomeSource, deleteIncomeSource,
+  addContribution, addIncomeSource, updateIncomeSource, deleteIncomeSource,
+  incomeSources, saveParams,
 }) {
   const yearsToRet = params.retAge - params.age
   const projected = projectValue(yearsToRet, investableBalance, totalContrib, params.ret / 100)
@@ -110,6 +113,16 @@ export default function Overview({
               <Doughnut data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } } }, cutout: '62%' }} />
             </div>
           </div>
+
+          <Collapsible title="Import from PDF" defaultOpen={false}>
+            <PDFImport
+              addAsset={addAsset}
+              addContribution={addContribution}
+              addIncomeSource={addIncomeSource}
+              saveParams={saveParams}
+              existingParams={params}
+            />
+          </Collapsible>
         </div>
 
         <div className="ov-col ov-col-manage" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

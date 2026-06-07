@@ -8,14 +8,12 @@ import { useDashboard } from '../hooks/useDashboard'
 import Overview from '../components/Overview'
 import Projection from '../components/Projection'
 import Simulation from '../components/Simulation'
-import PDFImport from '../components/PDFImport'
 import Chat from '../components/Chat'
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'projection', label: 'Projection' },
   { id: 'simulation', label: 'Simulation' },
-  { id: 'import', label: 'Import' },
 ]
 
 export default function Dashboard() {
@@ -154,7 +152,6 @@ export default function Dashboard() {
             {t.id === 'overview' && (
               <Overview
                 assets={dash.assets}
-                contributions={dash.contributions}
                 params={dash.params}
                 totalBalance={dash.totalBalance}
                 investableBalance={dash.investableBalance}
@@ -162,11 +159,11 @@ export default function Dashboard() {
                 addAsset={dash.addAsset}
                 deleteAsset={dash.deleteAsset}
                 addContribution={dash.addContribution}
-                deleteContribution={dash.deleteContribution}
                 incomeSources={dash.incomeSources}
                 addIncomeSource={dash.addIncomeSource}
                 updateIncomeSource={dash.updateIncomeSource}
                 deleteIncomeSource={dash.deleteIncomeSource}
+                saveParams={dash.saveParams}
               />
             )}
             {t.id === 'projection' && (
@@ -189,15 +186,6 @@ export default function Dashboard() {
                 assets={dash.assets}
                 totalContrib={dash.totalContrib}
                 incomeSources={dash.incomeSources}
-              />
-            )}
-            {t.id === 'import' && (
-              <PDFImport
-                addAsset={dash.addAsset}
-                addContribution={dash.addContribution}
-                addIncomeSource={dash.addIncomeSource}
-                saveParams={dash.saveParams}
-                existingParams={dash.params}
               />
             )}
           </div>
