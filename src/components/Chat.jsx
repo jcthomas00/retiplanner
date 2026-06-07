@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faXmark, faArrowRotateRight, faComment, faPaperPlane, faKey } from '@fortawesome/free-solid-svg-icons'
+import { useGeminiKey } from '../hooks/useGeminiKey'
+import GeminiKeyPrompt from './GeminiKeyPrompt'
 
-const PROVIDERS = [
-  { id: 'claude', label: 'Claude' },
-  { id: 'gemini', label: 'Gemini' },
-]
 
 function buildContext(assets, contributions, incomeSources, params) {
   const totalBalance = assets.reduce((s, a) => s + Number(a.balance), 0)
@@ -34,33 +34,8 @@ function buildContext(assets, contributions, incomeSources, params) {
 
 const SYSTEM = `You are a concise retirement planning assistant. You have the user's portfolio context as compact JSON with keys: age, retireAt, yearsLeft, assets[{n=name,t=type,b=balance,wa=withdrawal_age}], totalAssets, annualContribs[{n,amt}], totalAnnualContrib, incomeSources[{n=name,t=type,mo=monthly_amount,baseAge,startAge,cola}], preReturnPct, postReturnPct, inflationPct, annualWithdrawal, volatilityPct. Asset types: retirement,taxable,real_estate,cash,other. Income types: social_security,pension,annuity,other. SS benefits adjust: +8%/yr after FRA(67), -6.67%/yr before. Answer questions about their portfolio, projections, income streams, and retirement strategy. Be specific with numbers. Be thorough but clear — always finish your thought completely; don't truncate mid-sentence.`
 
-async function askClaude(context, messages) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
-  if (!apiKey || apiKey === 'your-anthropic-api-key-here') throw new Error('Add VITE_ANTHROPIC_KEY to .env.local')
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-opus-4-8',
-      max_tokens: 4096,
-      system: `${SYSTEM}\n\nPortfolio: ${context}`,
-      messages,
-    }),
-  })
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `Claude error ${res.status}`) }
-  const data = await res.json()
-  return data.content.find(b => b.type === 'text')?.text ?? ''
-}
-
-async function askGemini(context, messages) {
-  const apiKey = import.meta.env.VITE_GEMINI_KEY
-  if (!apiKey || apiKey === 'your-gemini-api-key-here') throw new Error('Add VITE_GEMINI_KEY to .env.local')
+async function askGemini(context, messages, apiKey) {
+  if (!apiKey) throw new Error('No Gemini API key set')
 
   const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
   const res = await fetch(
@@ -97,7 +72,8 @@ function loadHistory() {
 }
 
 export default function Chat({ assets, contributions, incomeSources, params, open, onToggle }) {
-  const [provider, setProvider] = useState('gemini')
+  const { key: geminiKey, setKey: setGeminiKey, clear: clearGeminiKey, hasKey } = useGeminiKey()
+  const [showKeyPrompt, setShowKeyPrompt] = useState(false)
   const [messages, setMessages] = useState(loadHistory)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -124,6 +100,7 @@ export default function Chat({ assets, contributions, incomeSources, params, ope
   async function send(text) {
     const question = (text ?? input).trim()
     if (!question || loading) return
+    if (!hasKey) { setShowKeyPrompt(true); return }
     setInput('')
     setError('')
     setFailedQuestion(null)
@@ -131,7 +108,7 @@ export default function Chat({ assets, contributions, incomeSources, params, ope
     setMessages(updated)
     setLoading(true)
     try {
-      const reply = provider === 'gemini' ? await askGemini(context, updated) : await askClaude(context, updated)
+      const reply = await askGemini(context, updated, geminiKey)
       setMessages(m => [...m, { role: 'assistant', content: reply }])
     } catch (e) {
       setError(e.message)
@@ -196,20 +173,29 @@ export default function Chat({ assets, contributions, incomeSources, params, ope
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {PROVIDERS.map(p => (
-              <button key={p.id} onClick={() => setProvider(p.id)} style={{
-                padding: '3px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 500,
-                border: provider === p.id ? '2px solid var(--accent)' : '1px solid var(--border)',
-                background: provider === p.id ? 'var(--card-alt)' : 'transparent',
-                color: provider === p.id ? 'var(--text)' : 'var(--text-muted)',
-              }}>{p.label}</button>
-            ))}
+            {hasKey && (
+              <button onClick={() => { clearGeminiKey(); setShowKeyPrompt(false) }} title="Remove API key" style={{
+                fontSize: 11, padding: '2px 8px', borderRadius: 6, cursor: 'pointer',
+                border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)',
+              }}><FontAwesomeIcon icon={faKey} /></button>
+            )}
             <button onClick={onToggle} style={{
               marginLeft: 4, fontSize: 16, lineHeight: 1, padding: '2px 6px', borderRadius: 6,
               border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)',
-            }}>✕</button>
+            }}><FontAwesomeIcon icon={faXmark} /></button>
           </div>
         </div>
+
+        {/* Key prompt — shown when key missing and user tries to chat */}
+        {showKeyPrompt && (
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            <GeminiKeyPrompt
+              context="the AI chat"
+              onSave={k => { setGeminiKey(k); setShowKeyPrompt(false) }}
+              onDismiss={() => setShowKeyPrompt(false)}
+            />
+          </div>
+        )}
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -257,7 +243,7 @@ export default function Chat({ assets, contributions, incomeSources, params, ope
                 <button onClick={retry} disabled={loading} style={{
                   flexShrink: 0, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6, cursor: loading ? 'default' : 'pointer',
                   border: '1px solid #DC2626', background: 'transparent', color: '#DC2626', opacity: loading ? 0.5 : 1,
-                }}>↻ Retry</button>
+                }}><FontAwesomeIcon icon={faArrowRotateRight} /> Retry</button>
               )}
             </div>
           )}
@@ -289,7 +275,7 @@ export default function Chat({ assets, contributions, incomeSources, params, ope
               background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600,
               opacity: (!input.trim() || loading) ? 0.4 : 1, flexShrink: 0,
             }}
-          >↑</button>
+          ><FontAwesomeIcon icon={faPaperPlane} /></button>
         </div>
       </div>
 
@@ -308,7 +294,7 @@ export default function Chat({ assets, contributions, incomeSources, params, ope
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)' }}
         title="Portfolio Chat"
       >
-        {open ? '✕' : '💬'}
+        <FontAwesomeIcon icon={open ? faXmark : faComment} />
       </button>
     </>
   )

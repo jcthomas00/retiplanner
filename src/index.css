@@ -14,7 +14,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg-page: #0F0F0F;
     --card: #1A1A1A;
     --card-alt: #242424;
@@ -25,7 +25,30 @@
   }
 }
 
+:root[data-theme="dark"] {
+  --bg-page: #0F0F0F;
+  --card: #1A1A1A;
+  --card-alt: #242424;
+  --border: rgba(255,255,255,0.08);
+  --text: #F0F0F0;
+  --text-muted: #888;
+  --accent: #1D9E75;
+}
+
+:root[data-theme="light"] {
+  --bg-page: #F5F4F1;
+  --card: #FFFFFF;
+  --card-alt: #F0EFEb;
+  --border: rgba(0,0,0,0.08);
+  --text: #1A1A1A;
+  --text-muted: #6B6B6B;
+  --accent: #1D9E75;
+  --accent-light: rgba(29,158,117,0.1);
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { color-scheme: light dark; }
 
 body {
   font-family: var(--font);
@@ -34,6 +57,28 @@ body {
   color: var(--text);
   background: var(--bg-page);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle global animations & smooth theme transitions */
+body, .card, button, input, select, textarea {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in { animation: fadeIn 0.25s ease both; }
+.fade-in-up { animation: fadeInUp 0.3s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
 input[type=range] {

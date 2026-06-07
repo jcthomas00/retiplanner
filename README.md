@@ -37,15 +37,17 @@ cp .env.example .env.local
 ```
 
 Then open `.env.local` and fill in:
-- `REACT_APP_SUPABASE_URL` — from Supabase dashboard → Settings → API → Project URL
-- `REACT_APP_SUPABASE_ANON_KEY` — from Supabase dashboard → Settings → API → anon/public key
+- `VITE_SUPABASE_URL` — from Supabase dashboard → Settings → API → Project URL
+- `VITE_SUPABASE_ANON_KEY` — from Supabase dashboard → Settings → API → anon/public key
+
+> **Gemini API key:** No longer needed in `.env.local`. Users enter their own key directly in the app (AI Chat and PDF Import tabs). It's stored only in the browser's `localStorage` and never in the bundle.
 
 ### 5. Start the dev server
 ```bash
-npm start
+npm run dev
 ```
 
-Open http://localhost:3000 — create an account and you're in.
+Open http://localhost:5173 — create an account and you're in.
 
 ---
 
@@ -58,8 +60,8 @@ vercel
 
 When prompted, add your environment variables:
 ```
-REACT_APP_SUPABASE_URL=https://your-project.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 Or set them in the Vercel dashboard under Project → Settings → Environment Variables.

@@ -4,6 +4,8 @@ import {
   LineElement, PointElement, LinearScale, CategoryScale, Filler
 } from 'chart.js'
 import { fmtK, projectValue } from '../lib/finance'
+import Assets from './Assets'
+import IncomeSources from './IncomeSources'
 
 ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale, Filler)
 
@@ -19,7 +21,11 @@ function MetricCard({ label, value, sub, color }) {
   )
 }
 
-export default function Overview({ assets, contributions, params, totalBalance, investableBalance, totalContrib }) {
+export default function Overview({
+  assets, params, totalBalance, investableBalance, totalContrib,
+  addAsset, deleteAsset,
+  incomeSources, addIncomeSource, updateIncomeSource, deleteIncomeSource,
+}) {
   const yearsToRet = params.retAge - params.age
   const projected = projectValue(yearsToRet, investableBalance, totalContrib, params.ret / 100)
   const retAssets = assets.filter(a => a.type === 'retirement').reduce((s, a) => s + Number(a.balance), 0)
@@ -69,6 +75,19 @@ export default function Overview({ assets, contributions, params, totalBalance, 
 
   return (
     <div>
+      {/* Side-by-side layout (charts 40% | asset management 60%) on extra-wide screens; stacks below 1600px */}
+      <style>{`
+        .ov-wide-row { display: block; }
+        .ov-wide-row > .ov-col { width: 100%; }
+        .ov-wide-row > .ov-col + .ov-col { margin-top: 1rem; }
+        @media (min-width: 1600px) {
+          .ov-wide-row { display: flex; gap: 1rem; align-items: flex-start; }
+          .ov-wide-row > .ov-col + .ov-col { margin-top: 0; }
+          .ov-wide-row > .ov-col-charts { flex: 0 0 40%; min-width: 0; }
+          .ov-wide-row > .ov-col-manage { flex: 1 1 0; min-width: 0; }
+        }
+      `}</style>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: '1.5rem' }}>
         <MetricCard label="Net worth" value={fmtK(totalBalance)} />
         <MetricCard label="Retirement assets" value={fmtK(retAssets)} />
@@ -76,30 +95,38 @@ export default function Overview({ assets, contributions, params, totalBalance, 
         <MetricCard label={`At retirement (${params.retAge})`} value={fmtK(projected)} color="#1D9E75" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '1rem' }}>
-        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Allocation</div>
-          <div style={{ position: 'relative', height: 180 }}>
-            <Doughnut data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } } }, cutout: '62%' }} />
+      <div className="ov-wide-row">
+        <div className="ov-col ov-col-charts" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Projected growth</div>
+            <div style={{ position: 'relative', height: 240 }}>
+              <Line data={nwData} options={chartOpts} />
+            </div>
           </div>
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {assets.map(a => (
-              <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, flexShrink: 0 }} />
-                <span style={{ flex: 1, color: 'var(--text-muted)' }}>{a.name}</span>
-                <span style={{ fontWeight: 500, color: 'var(--text)' }}>
-                  {Math.round(Number(a.balance) / totalBalance * 100)}%
-                </span>
-              </div>
-            ))}
+
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Allocation</div>
+            <div style={{ position: 'relative', height: 180 }}>
+              <Doughnut data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } } }, cutout: '62%' }} />
+            </div>
           </div>
         </div>
 
-        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Projected growth</div>
-          <div style={{ position: 'relative', height: 240 }}>
-            <Line data={nwData} options={chartOpts} />
-          </div>
+        <div className="ov-col ov-col-manage" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <Assets
+            assets={assets}
+            totalBalance={totalBalance}
+            addAsset={addAsset}
+            deleteAsset={deleteAsset}
+            retAge={params.retAge}
+          />
+          <IncomeSources
+            incomeSources={incomeSources}
+            addIncomeSource={addIncomeSource}
+            updateIncomeSource={updateIncomeSource}
+            deleteIncomeSource={deleteIncomeSource}
+            retAge={params.retAge}
+          />
         </div>
       </div>
     </div>

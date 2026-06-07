@@ -5,6 +5,7 @@ import {
 } from 'chart.js'
 import { useState } from 'react'
 import { fmtK, fmt, buildProjection, calcDepletionAge, effectiveMonthly, benefitFromTable } from '../lib/finance'
+import Contributions from './Contributions'
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
 
@@ -20,12 +21,24 @@ function Slider({ label, min, max, step, value, display, onChange }) {
   )
 }
 
-function MetricCard({ label, value, sub, color }) {
+function Section({ title, subtitle, children }) {
   return (
-    <div style={{ background: 'var(--card-alt)', borderRadius: 12, padding: '14px 16px' }}>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 600, color: color || 'var(--text)' }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, marginBottom: '1rem', overflow: 'hidden' }}>
+      <div style={{ padding: '1rem 1.25rem 0.5rem' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>{subtitle}</div>}
+      </div>
+      <div style={{ padding: '0 1.25rem 1.25rem' }}>{children}</div>
+    </div>
+  )
+}
+
+function MetricCard({ label, value, sub, color, compact }) {
+  return (
+    <div style={{ background: 'var(--card-alt)', borderRadius: compact ? 10 : 12, padding: compact ? '10px 12px' : '14px 16px' }}>
+      <div style={{ fontSize: compact ? 11 : 12, color: 'var(--text-muted)', marginBottom: compact ? 2 : 4 }}>{label}</div>
+      <div style={{ fontSize: compact ? 17 : 22, fontWeight: 600, color: color || 'var(--text)' }}>{value}</div>
+      {sub && <div style={{ fontSize: compact ? 10 : 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
     </div>
   )
 }
@@ -60,11 +73,12 @@ function ClaimingAgeControl({ source, onCommit }) {
   )
 }
 
-export default function Projection({ params, onChange, assets, totalContrib, incomeSources, updateIncomeSource }) {
+export default function Projection({ params, onChange, assets, totalContrib, incomeSources, updateIncomeSource, contributions, addContribution, deleteContribution }) {
   const p = params
   const set = key => val => onChange({ ...p, [key]: val })
 
   const points = buildProjection(p, assets, totalContrib, incomeSources)
+  const [selectedAge, setSelectedAge] = useState(null)
   const retPoint = points.find(pt => pt.age === p.retAge)
   const atRet = retPoint?.portfolio ?? 0
   const depletionAge = calcDepletionAge(points)
@@ -109,32 +123,86 @@ export default function Projection({ params, onChange, assets, totalContrib, inc
     return s + monthly * 12
   }, 0) ?? 0
 
-  return (
-    <div>
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', marginBottom: '1rem' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Settings</div>
-        <Slider label="Current age" min={18} max={70} step={1} value={p.age} display={`${p.age} yrs`} onChange={set('age')} />
-        <Slider label="Retirement age" min={50} max={85} step={1} value={p.retAge} display={`${p.retAge} yrs`} onChange={set('retAge')} />
-        <Slider label="Annual return (pre-retirement)" min={1} max={15} step={0.5} value={p.ret} display={`${p.ret.toFixed(1)}%`} onChange={set('ret')} />
-        <Slider label="Annual return (post-retirement)" min={0} max={10} step={0.5} value={p.postRet} display={`${p.postRet.toFixed(1)}%`} onChange={set('postRet')} />
-        <Slider label="Inflation rate" min={0} max={8} step={0.25} value={p.inf} display={`${p.inf.toFixed(2)}%`} onChange={set('inf')} />
-        <Slider label="Target annual spending" min={20000} max={300000} step={5000} value={p.withdraw} display={fmtK(p.withdraw) + '/yr'} onChange={set('withdraw')} />
-      </div>
+  const hasClaimingControls = incomeSources?.some(s => s.type === 'social_security' || s.type === 'pension' || s.type === 'annuity')
+  const hasBreakdown = incomeSources?.length > 0 || assets.some(a => a.withdrawal_age && a.withdrawal_age > p.retAge)
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: '1rem' }}>
-        <MetricCard label="Years to retirement" value={p.retAge - p.age} />
-        <MetricCard label="Portfolio at retirement" value={fmtK(atRet)} color="#1D9E75" />
-        <MetricCard
-          label="Net withdrawal rate"
-          value={`${wr.toFixed(1)}%`}
-          color={wr > 4 ? '#A32D2D' : '#3B6D11'}
-          sub={wr > 4 ? 'Above 4% rule' : 'Within 4% rule'}
-        />
-        <MetricCard label="Portfolio depletes at" value={depletionAge > 119 ? '120+' : depletionAge} sub="age" />
+  const chartCard = (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', marginBottom: '1rem' }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Projected portfolio value</div>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 12, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: '#378ADD' }} />Accumulation
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: '#1D9E75' }} />Withdrawal
+        </span>
+        {totalGuaranteedAtRet > 0 && (
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            · {fmtK(totalGuaranteedAtRet)}/yr guaranteed income reduces portfolio draw
+          </span>
+        )}
       </div>
+      <div style={{ position: 'relative', height: 280 }}>
+        <Line data={chartData} options={{
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          onClick: (_evt, elements, chart) => {
+            const idx = elements?.[0]?.index ?? chart.scales.x.getValueForPixel(_evt.x)
+            const pt = points[Math.round(idx)]
+            if (pt) setSelectedAge(pt.age)
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              filter: item => item.raw != null,
+              callbacks: {
+                title: items => `Age ${items[0]?.label}`,
+                label: item => {
+                  const pt = points[item.dataIndex]
+                  if (!pt) return fmtK(item.raw)
+                  const lines = [`Portfolio: ${fmtK(pt.portfolio)}`]
+                  if (pt.phase === 'distribution') {
+                    lines.push(`Guaranteed income: ${fmt(pt.income)}/yr`)
+                    lines.push(`Spending need (infl-adj): ${fmt(pt.grossWithdraw)}/yr`)
+                    lines.push(`Net portfolio withdrawal: ${fmt(pt.netWithdraw)}/yr`)
+                  } else {
+                    lines.push('Phase: Accumulation (saving & growing)')
+                  }
+                  return lines
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 8, font: { size: 11 } }, grid: { display: false } },
+            y: { ticks: { callback: v => fmtK(v), font: { size: 11 } }, grid: { color: 'rgba(128,128,128,0.08)' } },
+          },
+        }} />
+      </div>
+    </div>
+  )
 
-      {incomeSources?.some(s => s.type === 'social_security' || s.type === 'pension' || s.type === 'annuity') && (
-        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', marginBottom: '1rem' }}>
+  const settingsSection = (
+    <Section title="Settings" subtitle="Age, returns, inflation, spending target & income claiming ages">
+      <Slider label="Current age" min={18} max={70} step={1} value={p.age} display={`${p.age} yrs`} onChange={set('age')} />
+      <Slider label="Retirement age" min={50} max={85} step={1} value={p.retAge} display={`${p.retAge} yrs`} onChange={set('retAge')} />
+      <Slider label="Annual return (pre-retirement)" min={1} max={15} step={0.5} value={p.ret} display={`${p.ret.toFixed(1)}%`} onChange={set('ret')} />
+      <Slider label="Annual return (post-retirement)" min={0} max={10} step={0.5} value={p.postRet} display={`${p.postRet.toFixed(1)}%`} onChange={set('postRet')} />
+      <Slider label="Inflation rate" min={0} max={8} step={0.25} value={p.inf} display={`${p.inf.toFixed(2)}%`} onChange={set('inf')} />
+      <Slider label="Target annual spending" min={20000} max={300000} step={5000} value={p.withdraw} display={fmtK(p.withdraw) + '/yr'} onChange={set('withdraw')} />
+
+      {contributions && (
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px dashed var(--border)' }}>
+          <Contributions
+            contributions={contributions}
+            addContribution={addContribution}
+            deleteContribution={deleteContribution}
+          />
+        </div>
+      )}
+
+      {hasClaimingControls && (
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px dashed var(--border)' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Claiming / start age</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
             Adjust when you start taking Social Security, your pension, or an annuity. The app pulls your monthly benefit at that age from your personalized statement (when available) and subtracts it from the spending you'd otherwise need to withdraw from your portfolio.
@@ -146,41 +214,6 @@ export default function Projection({ params, onChange, assets, totalContrib, inc
               onCommit={(id, age) => updateIncomeSource(id, { start_age: age })}
             />
           ))}
-        </div>
-      )}
-
-      {(incomeSources?.length > 0 || assets.some(a => a.withdrawal_age && a.withdrawal_age > p.retAge)) && (
-        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', marginBottom: '1rem' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Income & withdrawal breakdown</div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-              <span>Target annual spending (inflation-adjusted at retirement)</span>
-              <span style={{ color: 'var(--text)', fontWeight: 500 }}>{fmt(p.withdraw)}/yr</span>
-            </div>
-            {incomeSources?.filter(s => s.start_age <= p.retAge).map(src => (
-              <div key={src.id} style={{ display: 'flex', justifyContent: 'space-between', color: '#1D9E75' }}>
-                <span>– {src.name} (starts age {src.start_age})</span>
-                <span style={{ fontWeight: 500 }}>–{fmt(effectiveMonthly(src) * 12)}/yr</span>
-              </div>
-            ))}
-            {incomeSources?.filter(s => s.start_age > p.retAge).map(src => (
-              <div key={src.id} style={{ display: 'flex', justifyContent: 'space-between', color: '#BA7517' }}>
-                <span>– {src.name} (starts age {src.start_age}, delayed)</span>
-                <span style={{ fontWeight: 500, fontSize: 11 }}>kicks in later</span>
-              </div>
-            ))}
-            {assets.filter(a => a.withdrawal_age && a.withdrawal_age > p.retAge).map(a => (
-              <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', color: '#BA7517' }}>
-                <span>– {a.name} locked until age {a.withdrawal_age}</span>
-                <span style={{ fontWeight: 500, fontSize: 11 }}>unlocks at {a.withdrawal_age}</span>
-              </div>
-            ))}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: 'var(--text)' }}>
-              <span>Net from portfolio at retirement</span>
-              <span>{fmt(netWithdrawAtRet)}/yr</span>
-            </div>
-          </div>
 
           {delayedKickIns.length > 0 && (
             <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
@@ -200,32 +233,94 @@ export default function Projection({ params, onChange, assets, totalContrib, inc
           )}
         </div>
       )}
+    </Section>
+  )
 
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Projected portfolio value</div>
-        <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 12, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: '#378ADD' }} />Accumulation
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: 2, background: '#1D9E75' }} />Withdrawal
-          </span>
-          {totalGuaranteedAtRet > 0 && (
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              · {fmtK(totalGuaranteedAtRet)}/yr guaranteed income reduces portfolio draw
-            </span>
-          )}
+  const breakdownSection = hasBreakdown && (() => {
+    const viewAge = selectedAge ?? p.retAge
+    const viewPoint = points.find(pt => pt.age === viewAge) || retPoint
+    const isDistribution = viewPoint?.phase === 'distribution'
+    return (
+      <Section
+        title="Income & withdrawal breakdown"
+        subtitle={`Click an age on the chart to inspect it — currently showing age ${viewAge}${selectedAge == null ? ' (retirement)' : ''}`}
+      >
+        {!isDistribution ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            At age {viewAge} you're still in the accumulation phase — contributions and growth, no portfolio withdrawals yet.
+            <div style={{ marginTop: 6 }}>Portfolio value: <strong style={{ color: 'var(--text)' }}>{fmt(viewPoint?.portfolio ?? 0)}</strong></div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+              <span>Spending need at age {viewAge} (inflation-adjusted)</span>
+              <span style={{ color: 'var(--text)', fontWeight: 500 }}>{fmt(viewPoint.grossWithdraw)}/yr</span>
+            </div>
+            {incomeSources?.filter(s => s.start_age <= viewAge).map(src => (
+              <div key={src.id} style={{ display: 'flex', justifyContent: 'space-between', color: '#1D9E75' }}>
+                <span>– {src.name} (started age {src.start_age})</span>
+                <span style={{ fontWeight: 500 }}>–{fmt(effectiveMonthly(src) * 12)}/yr</span>
+              </div>
+            ))}
+            {incomeSources?.filter(s => s.start_age > viewAge).map(src => (
+              <div key={src.id} style={{ display: 'flex', justifyContent: 'space-between', color: '#BA7517' }}>
+                <span>– {src.name} (starts age {src.start_age}, not yet)</span>
+                <span style={{ fontWeight: 500, fontSize: 11 }}>kicks in later</span>
+              </div>
+            ))}
+            {assets.filter(a => a.withdrawal_age && a.withdrawal_age > viewAge).map(a => (
+              <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', color: '#BA7517' }}>
+                <span>– {a.name} locked until age {a.withdrawal_age}</span>
+                <span style={{ fontWeight: 500, fontSize: 11 }}>unlocks at {a.withdrawal_age}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: 'var(--text)' }}>
+              <span>Net from portfolio at age {viewAge}</span>
+              <span>{fmt(viewPoint.netWithdraw)}/yr</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+              <span>Portfolio value at age {viewAge}</span>
+              <span style={{ color: 'var(--text)', fontWeight: 500 }}>{fmt(viewPoint.portfolio)}</span>
+            </div>
+          </div>
+        )}
+      </Section>
+    )
+  })()
+
+  return (
+    <div>
+      {/* Side-by-side layout (chart | settings) on extra-wide screens; stacks below 1600px */}
+      <style>{`
+        .proj-wide-row { display: block; }
+        .proj-wide-row > .proj-col { width: 100%; }
+        @media (min-width: 1600px) {
+          .proj-wide-row { display: flex; gap: 1rem; align-items: flex-start; }
+          .proj-wide-row > .proj-col { flex: 1 1 0; min-width: 0; }
+        }
+      `}</style>
+
+      {/* Chart + reactive breakdown (left/top) + Settings (right/below) */}
+      <div className="proj-wide-row">
+        <div className="proj-col">
+          {/* Headline metrics */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: '1rem' }}>
+            <MetricCard compact label="Years to retirement" value={p.retAge - p.age} />
+            <MetricCard compact label="Portfolio at retirement" value={fmtK(atRet)} color="#1D9E75" />
+            <MetricCard
+              compact
+              label="Net withdrawal rate"
+              value={`${wr.toFixed(1)}%`}
+              color={wr > 4 ? '#A32D2D' : '#3B6D11'}
+              sub={wr > 4 ? 'Above 4% rule' : 'Within 4% rule'}
+            />
+            <MetricCard compact label="Portfolio depletes at" value={depletionAge > 119 ? '120+' : depletionAge} sub="age" />
+          </div>
+
+          {chartCard}
+          {breakdownSection}
         </div>
-        <div style={{ position: 'relative', height: 280 }}>
-          <Line data={chartData} options={{
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmtK(c.raw) } } },
-            scales: {
-              x: { ticks: { maxTicksLimit: 8, font: { size: 11 } }, grid: { display: false } },
-              y: { ticks: { callback: v => fmtK(v), font: { size: 11 } }, grid: { color: 'rgba(128,128,128,0.08)' } },
-            },
-          }} />
-        </div>
+        <div className="proj-col">{settingsSection}</div>
       </div>
     </div>
   )

@@ -178,8 +178,8 @@ export function buildProjection(params, assets, totalContrib, incomeSources) {
     const income = totalIncomeAtAge(incomeSources || [], currentAge)
     const netWithdraw = Math.max(0, inflAdjWithdraw - income)
 
-    liquidPool = liquidPool * (1 + postRate) - netWithdraw
-    const totalPool = Math.max(0, liquidPool) + Object.values(lockedPools).reduce((s, v) => s + v, 0)
+    liquidPool = Math.max(0, liquidPool * (1 + postRate) - netWithdraw)
+    const totalPool = liquidPool + Object.values(lockedPools).reduce((s, v) => s + v, 0)
 
     points.push({
       age: currentAge,
@@ -276,7 +276,7 @@ export function runMonteCarlo(params, assets, totalContrib, incomeSources, numSi
 
       const income = totalIncomeAtAge(incomeSources || [], currentAge)
       const netWithdraw = Math.max(0, inflAdjWithdraw - income)
-      liquid = liquid * (1 + r) - netWithdraw
+      liquid = Math.max(0, liquid * (1 + r) - netWithdraw)
 
       const total = Math.max(0, liquid) + Object.values(lockedPools).reduce((s, vv) => s + vv, 0)
       path.push(Math.round(total))

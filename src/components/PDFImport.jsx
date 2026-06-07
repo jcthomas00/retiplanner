@@ -1,11 +1,9 @@
 import { useState, useRef } from 'react'
+import { useGeminiKey } from '../hooks/useGeminiKey'
+import GeminiKeyPrompt from './GeminiKeyPrompt'
 
 const ASSET_COLORS = ['#1D9E75', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316']
 
-const PROVIDERS = [
-  { id: 'claude', label: 'Claude', envKey: 'VITE_ANTHROPIC_KEY', placeholder: 'sk-ant-...' },
-  { id: 'gemini', label: 'Gemini', envKey: 'VITE_GEMINI_KEY', placeholder: 'AIza...' },
-]
 
 async function extractTextFromPDF(file) {
   const pdfjsLib = await import('pdfjs-dist')
@@ -97,49 +95,8 @@ Rules:
 - If no meaningful financial data found, return {"assets":[],"contributions":[],"income_sources":[],"projection_params":null}
 - Respond with only the JSON object, no other text.`
 
-async function analyzeWithClaude(pdfText) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
-  if (!apiKey || apiKey === 'your-anthropic-api-key-here') {
-    throw new Error('Please add your Anthropic API key to .env.local as VITE_ANTHROPIC_KEY')
-  }
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-opus-4-8',
-      max_tokens: 4096,
-      thinking: { type: 'adaptive' },
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: `Document text:\n${pdfText.slice(0, 50000)}` }],
-    }),
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error?.message || `Claude API error: ${res.status}`)
-  }
-
-  const data = await res.json()
-  const textBlock = data.content.find(b => b.type === 'text')
-  if (!textBlock) throw new Error('No text response from Claude')
-
-  const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('Could not parse JSON from Claude response')
-
-  return JSON.parse(jsonMatch[0])
-}
-
-async function analyzeWithGemini(pdfText) {
-  const apiKey = import.meta.env.VITE_GEMINI_KEY
-  if (!apiKey || apiKey === 'your-gemini-api-key-here') {
-    throw new Error('Please add your Gemini API key to .env.local as VITE_GEMINI_KEY')
-  }
+async function analyzeWithGemini(pdfText, apiKey) {
+  if (!apiKey) throw new Error('No Gemini API key set')
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -177,15 +134,13 @@ const field = (label, value, unit = '') => (
 )
 
 export default function PDFImport({ addAsset, addContribution, addIncomeSource, saveParams, existingParams }) {
+  const { key: geminiKey, setKey: setGeminiKey, hasKey } = useGeminiKey()
   const [status, setStatus] = useState('idle') // idle | extracting | analyzing | preview | importing | done | error
-  const [provider, setProvider] = useState('claude')
   const [extracted, setExtracted] = useState(null)
   const [error, setError] = useState('')
   const [fileName, setFileName] = useState('')
   const [selected, setSelected] = useState({ assets: [], contributions: [], income: [], params: true })
   const fileRef = useRef()
-
-  const activeProvider = PROVIDERS.find(p => p.id === provider)
 
   async function handleFile(file) {
     if (!file || file.type !== 'application/pdf') {
@@ -201,7 +156,7 @@ export default function PDFImport({ addAsset, addContribution, addIncomeSource, 
       if (!text.trim()) throw new Error('Could not extract text from PDF. It may be a scanned image.')
 
       setStatus('analyzing')
-      const data = provider === 'gemini' ? await analyzeWithGemini(text) : await analyzeWithClaude(text)
+      const data = await analyzeWithGemini(text, geminiKey)
 
       setExtracted(data)
       setSelected({
@@ -272,8 +227,8 @@ export default function PDFImport({ addAsset, addContribution, addIncomeSource, 
   }
 
   const hasAny = extracted && (extracted.assets.length > 0 || extracted.contributions.length > 0 || (extracted.income_sources || []).length > 0 || extracted.projection_params)
-  const analyzingLabel = provider === 'gemini' ? 'Analyzing with Gemini…' : 'Analyzing with Claude…'
-  const noDataLabel = `${activeProvider.label} couldn't find financial data in this document. Try a different PDF.`
+  const analyzingLabel = 'Analyzing with Gemini…'
+  const noDataLabel = `Gemini couldn't find financial data in this document. Try a different PDF.`
 
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
@@ -284,33 +239,24 @@ export default function PDFImport({ addAsset, addContribution, addIncomeSource, 
         </p>
       </div>
 
-      {/* Provider selector */}
-      {(status === 'idle' || status === 'error') && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {PROVIDERS.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setProvider(p.id)}
-              style={{
-                padding: '6px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 500,
-                border: provider === p.id ? '2px solid var(--accent)' : '1px solid var(--border)',
-                background: provider === p.id ? 'var(--card-alt)' : 'transparent',
-                color: provider === p.id ? 'var(--text)' : 'var(--text-muted)',
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
+      {/* Key prompt — shown when key is missing */}
+      {!hasKey && (status === 'idle' || status === 'error') && (
+        <div style={{ marginBottom: 20 }}>
+          <GeminiKeyPrompt
+            context="PDF import"
+            onSave={k => setGeminiKey(k)}
+          />
         </div>
       )}
 
       {/* Upload area */}
       {(status === 'idle' || status === 'error') && (
         <div
-          onClick={() => fileRef.current.click()}
+          onClick={() => hasKey && fileRef.current.click()}
           onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]) }}
+          onDrop={e => { e.preventDefault(); if (hasKey) handleFile(e.dataTransfer.files[0]) }}
           style={{
+            opacity: hasKey ? 1 : 0.45, pointerEvents: hasKey ? 'auto' : 'none',
             border: '2px dashed var(--border)', borderRadius: 12, padding: '3rem 2rem',
             textAlign: 'center', cursor: 'pointer', background: 'var(--card)',
             transition: 'border-color 0.15s',
@@ -380,7 +326,7 @@ export default function PDFImport({ addAsset, addContribution, addIncomeSource, 
           ) : (
             <>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-                {activeProvider.label} found the following data in <strong style={{ color: 'var(--text)' }}>{fileName}</strong>. Select what to import.
+                Gemini found the following data in <strong style={{ color: 'var(--text)' }}>{fileName}</strong>. Select what to import.
               </div>
 
               {/* Assets */}

@@ -1,14 +1,39 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChartLine } from '@fortawesome/free-solid-svg-icons'
+
+function GoogleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+      <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+      <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+    </svg>
+  )
+}
 
 export default function AuthPage() {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, signInWithGoogle } = useAuth()
   const [mode, setMode] = useState('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+
+  const handleGoogle = async () => {
+    setError(''); setMessage(''); setGoogleLoading(true)
+    try {
+      const { error } = await signInWithGoogle()
+      if (error) { setError(error.message); setGoogleLoading(false) }
+      // on success, browser redirects to provider — no need to reset loading
+    } catch (e) {
+      setError(e.message); setGoogleLoading(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -39,7 +64,7 @@ export default function AuthPage() {
             background: 'var(--accent)', display: 'flex',
             alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 1rem', fontSize: 22
-          }}>📈</div>
+          }}><FontAwesomeIcon icon={faChartLine} /></div>
           <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0, color: 'var(--text)' }}>
             Retirement Dashboard
           </h1>
@@ -65,6 +90,26 @@ export default function AuthPage() {
                 {m === 'signin' ? 'Sign in' : 'Create account'}
               </button>
             ))}
+          </div>
+
+          <button type="button" onClick={handleGoogle} disabled={googleLoading} style={{
+            width: '100%', padding: '10px', borderRadius: 8, marginBottom: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)',
+            fontSize: 14, fontWeight: 500, cursor: googleLoading ? 'not-allowed' : 'pointer',
+            opacity: googleLoading ? 0.7 : 1, transition: 'background 0.15s, transform 0.1s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--card-alt)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--card)' }}
+          >
+            <GoogleIcon />
+            {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>or</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
 
           <form onSubmit={handleSubmit}>

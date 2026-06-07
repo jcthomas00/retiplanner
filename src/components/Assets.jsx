@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { fmt, ASSET_COLORS, ASSET_TYPES } from '../lib/finance'
+import Collapsible from './Collapsible'
 
 function AssetForm({ onSave, onCancel, retAge }) {
   const [name, setName] = useState('')
@@ -70,36 +73,8 @@ function AssetForm({ onSave, onCancel, retAge }) {
   )
 }
 
-function ContribForm({ onSave, onCancel }) {
-  const [name, setName] = useState('')
-  const [amount, setAmount] = useState('')
-  const inputStyle = {
-    width: '100%', padding: '9px 11px', borderRadius: 8,
-    border: '1px solid var(--border)', background: 'var(--bg-page)',
-    color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box'
-  }
-  return (
-    <form onSubmit={e => { e.preventDefault(); onSave({ name, amount: parseFloat(amount) }) }}
-      style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12, padding: 14, background: 'var(--bg-page)', borderRadius: 10 }}>
-      <div>
-        <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Account</label>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. 401(k)" style={inputStyle} required />
-      </div>
-      <div>
-        <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Annual amount ($)</label>
-        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" style={inputStyle} required min="0" />
-      </div>
-      <div style={{ gridColumn: '1/-1', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button type="button" onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-        <button type="submit" style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Add</button>
-      </div>
-    </form>
-  )
-}
-
-export default function Assets({ assets, contributions, totalBalance, addAsset, deleteAsset, addContribution, deleteContribution, retAge }) {
+export default function Assets({ assets, totalBalance, addAsset, deleteAsset, retAge }) {
   const [showAssetForm, setShowAssetForm] = useState(false)
-  const [showContribForm, setShowContribForm] = useState(false)
 
   const typeLabel = (t) => ASSET_TYPES.find(x => x.value === t)?.label || t
 
@@ -110,16 +85,13 @@ export default function Assets({ assets, contributions, totalBalance, addAsset, 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assets</div>
-          <button onClick={() => setShowAssetForm(v => !v)} style={{
-            display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 10px',
-            borderRadius: 6, border: '1px solid var(--border)', background: 'transparent',
-            color: 'var(--text)', cursor: 'pointer'
-          }}>+ Add asset</button>
-        </div>
-
+      <Collapsible title="Assets" actions={
+        <button onClick={() => setShowAssetForm(v => !v)} style={{
+          display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 10px',
+          borderRadius: 6, border: '1px solid var(--border)', background: 'transparent',
+          color: 'var(--text)', cursor: 'pointer'
+        }}>+ Add asset</button>
+      }>
         {assets.map(a => (
           <div key={a.id} style={rowStyle}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: a.color, flexShrink: 0 }} />
@@ -135,33 +107,15 @@ export default function Assets({ assets, contributions, totalBalance, addAsset, 
             )}
             <span style={{ fontSize: 13, fontWeight: 500, minWidth: 90, textAlign: 'right' }}>{fmt(a.balance)}</span>
             <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 36, textAlign: 'right' }}>
-              {Math.round(Number(a.balance) / totalBalance * 100)}%
+              {totalBalance > 0 ? Math.round(Number(a.balance) / totalBalance * 100) : 0}%
             </span>
-            <button onClick={() => deleteAsset(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: '0 2px' }} aria-label="Delete">✕</button>
+            <button onClick={() => deleteAsset(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: '0 2px' }} aria-label="Delete"><FontAwesomeIcon icon={faTrashCan} /></button>
           </div>
         ))}
 
         {assets.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No assets yet. Add one below.</p>}
         {showAssetForm && <AssetForm retAge={retAge} onSave={async (a) => { await addAsset(a); setShowAssetForm(false) }} onCancel={() => setShowAssetForm(false)} />}
-      </div>
-
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Annual contributions</div>
-          <button onClick={() => setShowContribForm(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer' }}>+ Add</button>
-        </div>
-
-        {contributions.map(c => (
-          <div key={c.id} style={rowStyle}>
-            <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{c.name}</span>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{fmt(c.amount)}/yr</span>
-            <button onClick={() => deleteContribution(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: '0 2px' }} aria-label="Delete">✕</button>
-          </div>
-        ))}
-
-        {contributions.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No contributions yet.</p>}
-        {showContribForm && <ContribForm onSave={async (c) => { await addContribution(c); setShowContribForm(false) }} onCancel={() => setShowContribForm(false)} />}
-      </div>
+      </Collapsible>
     </div>
   )
 }

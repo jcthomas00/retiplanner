@@ -1,7 +1,13 @@
 node_modules/
 dist/
-.env.local
+build/
 .env
+.env.local
+.env.*.local
+supabase/.env
 *.log
 .DS_Store
-build/
+
+# Supabase local CLI state — not needed in version control
+supabase/.branches/
+supabase/.temp/

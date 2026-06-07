@@ -6,10 +6,12 @@
 
 -- ── Migration (run if upgrading from earlier schema) ─────────────────────────
 -- ALTER TABLE assets ADD COLUMN IF NOT EXISTS withdrawal_age INTEGER;
+-- ALTER TABLE profiles ADD COLUMN IF NOT EXISTS gemini_key TEXT;
 -- (income_sources table below is new — just run the CREATE TABLE block)
 
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
+  gemini_key TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -60,10 +62,14 @@ CREATE TABLE IF NOT EXISTS projection_params (
 );
 
 -- Row Level Security
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contributions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projection_params ENABLE ROW LEVEL SECURITY;
 ALTER TABLE income_sources ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own profile" ON profiles
+  FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users manage own assets" ON assets
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

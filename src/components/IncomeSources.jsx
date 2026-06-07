@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import Collapsible from './Collapsible'
 import { fmt, fmtK, INCOME_TYPES, effectiveMonthly, ssClaimingFactor, benefitFromTable } from '../lib/finance'
 
 const SS_FRA = 67
@@ -287,16 +290,15 @@ export default function IncomeSources({ incomeSources, addIncomeSource, updateIn
   const typeLabel = t => INCOME_TYPES.find(x => x.value === t)?.label || t
 
   return (
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Guaranteed Income</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Social Security, pensions, annuities</div>
-        </div>
+    <Collapsible
+      title="Guaranteed Income"
+      actions={
         <button onClick={() => setShowForm(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer' }}>
           + Add
         </button>
-      </div>
+      }
+    >
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: -8, marginBottom: 10 }}>Social Security, pensions, annuities</div>
 
       {incomeSources.length === 0 && !showForm && (
         <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>
@@ -349,6 +351,6 @@ export default function IncomeSources({ incomeSources, addIncomeSource, updateIn
           onCancel={() => setShowForm(false)}
         />
       )}
-    </div>
+    </Collapsible>
   )
 }
