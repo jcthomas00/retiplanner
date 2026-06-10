@@ -7,6 +7,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFileImport, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { fmtK, projectValue } from '../lib/finance'
+import { verticalGradient, crosshairGlow, glassTooltip, axisStyle, centerText } from '../lib/chartTheme'
 import Assets from './Assets'
 import IncomeSources from './IncomeSources'
 import PDFImport from './PDFImport'
@@ -48,7 +49,9 @@ export default function Overview({
       data: assets.map(a => Number(a.balance)),
       backgroundColor: assets.map(a => a.color),
       borderWidth: 0,
-      hoverOffset: 4,
+      spacing: 3,
+      borderRadius: 6,
+      hoverOffset: 10,
     }]
   }
 
@@ -68,22 +71,31 @@ export default function Overview({
     datasets: [{
       data: nwVals,
       borderColor: '#1D9E75',
-      borderWidth: 2,
+      borderWidth: 2.5,
       pointRadius: 0,
+      pointHitRadius: 20,
       fill: true,
-      backgroundColor: 'rgba(29,158,117,0.08)',
+      backgroundColor: verticalGradient('#1D9E75', 0.28),
       tension: 0.4,
     }]
   }
 
   const chartOpts = {
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmtK(c.raw) } } },
-    scales: {
-      x: { ticks: { maxTicksLimit: 6, font: { size: 11 } }, grid: { display: false } },
-      y: { ticks: { callback: v => fmtK(v), font: { size: 11 } }, grid: { color: 'rgba(128,128,128,0.08)' } }
-    }
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: false, external: glassTooltip,
+        callbacks: { title: items => `Age ${items[0]?.label}`, label: c => fmtK(c.raw) },
+      },
+    },
+    scales: axisStyle(v => fmtK(v)),
   }
+
+  const textColor = typeof window !== 'undefined'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#16181D'
+    : '#16181D'
 
   return (
     <div>
@@ -144,15 +156,22 @@ export default function Overview({
         <div className="ov-col ov-col-charts" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="card" style={{ padding: '1.4rem' }}>
             <div className="card-title" style={{ marginBottom: '1rem' }}>Projected growth</div>
-            <div style={{ position: 'relative', height: 240 }}>
-              <Line data={nwData} options={chartOpts} />
+            <div className="chart-glass" style={{ height: 250 }}>
+              <Line data={nwData} options={chartOpts} plugins={[crosshairGlow]} />
             </div>
           </div>
 
           <div className="card" style={{ padding: '1.4rem' }}>
             <div className="card-title" style={{ marginBottom: '1rem' }}>Allocation</div>
-            <div style={{ position: 'relative', height: 180 }}>
-              <Doughnut data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } } }, cutout: '68%' }} />
+            <div className="chart-glass" style={{ height: 200, padding: '14px 10px' }}>
+              <Doughnut data={pieData} options={{
+                responsive: true, maintainAspectRatio: false, cutout: '72%',
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { enabled: false, external: glassTooltip, callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } },
+                  centerText: { text: fmtK(totalBalance), sub: 'Net worth', color: textColor },
+                },
+              }} plugins={[centerText]} />
             </div>
           </div>
         </div>

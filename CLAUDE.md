@@ -20,6 +20,7 @@ The app uses a refined, polished aesthetic inspired by Monarch Money / Rocket Mo
 - Subtle motion only: hover lifts, 0.15s transitions, `fadeInUp` on tab change; respect `prefers-reduced-motion`
 - Sliders: native `input[type=range]` styled globally (thick track, bordered grabbable thumb); layout = label + value on one line, full-width slider below (never fixed-width side labels — they overflow on mobile)
 - Mobile first: no fixed min-widths in flex rows; wrap or stack instead. Breakpoints: 720px (mobile header/nav), 1600px (wide two-column layouts)
+- Charts: use the helpers in `src/lib/chartTheme.js` — `verticalGradient` fading area fills, `glassTooltip` (frosted external tooltip, set `tooltip: { enabled: false, external: glassTooltip }`), `crosshairGlow` plugin (dashed crosshair + glowing hover dot), `axisStyle` (clean axes, mono ticks), `centerText` for doughnut center labels. Wrap chart containers in `.chart-glass` (translucent frosted panel)
 
 ## Commands
 - `npm run dev` — local dev server
