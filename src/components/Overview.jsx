@@ -33,7 +33,7 @@ function MetricCard({ label, value, sub, color, onClick, active }) {
 
 export default function Overview({
   assets, params, totalBalance, investableBalance, totalContrib,
-  addAsset, deleteAsset,
+  addAsset, updateAsset, deleteAsset, assetHistory,
   addContribution, addIncomeSource, updateIncomeSource, deleteIncomeSource,
   incomeSources, saveParams,
 }) {
@@ -48,10 +48,13 @@ export default function Overview({
     datasets: [{
       data: assets.map(a => Number(a.balance)),
       backgroundColor: assets.map(a => a.color),
-      borderWidth: 0,
+      borderWidth: 2,
+      borderColor: 'transparent',
+      hoverBorderColor: 'var(--card)',
+      hoverBorderWidth: 3,
       spacing: 3,
       borderRadius: 6,
-      hoverOffset: 10,
+      hoverOffset: 16,
     }]
   }
 
@@ -166,6 +169,8 @@ export default function Overview({
             <div className="chart-glass" style={{ height: 200, padding: '14px 10px' }}>
               <Doughnut data={pieData} options={{
                 responsive: true, maintainAspectRatio: false, cutout: '72%',
+                animation: { duration: 400 },
+                transitions: { active: { animation: { duration: 200 } } },
                 plugins: {
                   legend: { display: false },
                   tooltip: { enabled: false, external: glassTooltip, callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } },
@@ -173,6 +178,35 @@ export default function Overview({
                 },
               }} plugins={[centerText]} />
             </div>
+
+            {/* Horizontal bar breakdown */}
+            {assets.length > 0 && (
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 9 }}>
+                {[...assets]
+                  .sort((a, b) => Number(b.balance) - Number(a.balance))
+                  .map(a => {
+                    const pct = totalBalance > 0 ? Number(a.balance) / totalBalance * 100 : 0
+                    return (
+                      <div key={a.id}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, flexShrink: 0 }} />
+                          <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmtK(Number(a.balance))}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums', minWidth: 32, textAlign: 'right', flexShrink: 0 }}>{pct.toFixed(1)}%</span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 3, background: 'var(--card-alt)', overflow: 'hidden' }}>
+                          <div style={{
+                            height: 5, borderRadius: 3,
+                            background: a.color,
+                            width: `${Math.max(pct, 0.5)}%`,
+                            transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
+                          }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -181,7 +215,9 @@ export default function Overview({
             assets={assets}
             totalBalance={totalBalance}
             addAsset={addAsset}
+            updateAsset={updateAsset}
             deleteAsset={deleteAsset}
+            assetHistory={assetHistory}
             retAge={params.retAge}
           />
           <IncomeSources
