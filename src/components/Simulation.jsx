@@ -78,20 +78,24 @@ export default function Simulation({ params, onChange, assets, totalContrib, inc
       <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', marginBottom: '1rem' }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Monte Carlo settings</div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)', minWidth: 180 }}>Return volatility (std dev)</span>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Return volatility (std dev)</span>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{vol.toFixed(1)}%</span>
+          </div>
           <input type="range" min={1} max={20} step={0.5} value={vol}
             onChange={e => setVol(parseFloat(e.target.value))}
-            style={{ flex: 1, accentColor: 'var(--accent)' }} />
-          <span style={{ fontSize: 13, fontWeight: 500, minWidth: 70, textAlign: 'right' }}>{vol.toFixed(1)}%</span>
+            style={{ width: '100%', display: 'block', accentColor: 'var(--accent)' }} />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)', minWidth: 180 }}>Number of simulations</span>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Number of simulations</span>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{numSims}</span>
+          </div>
           <input type="range" min={100} max={2000} step={100} value={numSims}
             onChange={e => setNumSims(parseInt(e.target.value))}
-            style={{ flex: 1, accentColor: 'var(--accent)' }} />
-          <span style={{ fontSize: 13, fontWeight: 500, minWidth: 70, textAlign: 'right' }}>{numSims}</span>
+            style={{ width: '100%', display: 'block', accentColor: 'var(--accent)' }} />
         </div>
 
         <button onClick={run} disabled={running} style={{
