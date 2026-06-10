@@ -60,12 +60,13 @@ export default function AuthPage() {
       <div style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
           <div style={{
-            width: 48, height: 48, borderRadius: 12,
-            background: 'var(--accent)', display: 'flex',
+            width: 52, height: 52, borderRadius: 16,
+            background: 'var(--accent)', display: 'flex', color: '#fff',
             alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 1rem', fontSize: 22
+            margin: '0 auto 1rem', fontSize: 22,
+            boxShadow: '0 8px 24px var(--accent-light)',
           }}><FontAwesomeIcon icon={faChartLine} /></div>
-          <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0, color: 'var(--text)' }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, color: 'var(--text)' }}>
             Retirement Dashboard
           </h1>
           <p style={{ color: 'var(--text-muted)', marginTop: 6, fontSize: 14 }}>
@@ -73,18 +74,15 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <div style={{
-          background: 'var(--card)', border: '1px solid var(--border)',
-          borderRadius: 16, padding: '1.75rem'
-        }}>
-          <div style={{ display: 'flex', marginBottom: '1.5rem', background: 'var(--bg-page)', borderRadius: 8, padding: 3 }}>
+        <div className="card" style={{ padding: '1.75rem' }}>
+          <div style={{ display: 'flex', marginBottom: '1.5rem', background: 'var(--card-alt)', borderRadius: 999, padding: 3 }}>
             {['signin', 'signup'].map(m => (
               <button key={m} onClick={() => setMode(m)} style={{
-                flex: 1, padding: '7px', borderRadius: 6, border: 'none',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                flex: 1, padding: '8px', borderRadius: 999, border: 'none',
+                fontSize: 13, fontWeight: mode === m ? 600 : 500, cursor: 'pointer',
                 background: mode === m ? 'var(--card)' : 'transparent',
                 color: mode === m ? 'var(--text)' : 'var(--text-muted)',
-                boxShadow: mode === m ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                boxShadow: mode === m ? 'var(--shadow-card)' : 'none',
                 transition: 'all 0.15s'
               }}>
                 {m === 'signin' ? 'Sign in' : 'Create account'}
@@ -155,11 +153,8 @@ export default function AuthPage() {
               }}>{message}</div>
             )}
 
-            <button type="submit" disabled={loading} style={{
-              width: '100%', padding: '11px', borderRadius: 8,
-              background: 'var(--accent)', color: '#fff', border: 'none',
-              fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1
+            <button type="submit" disabled={loading} className="btn btn-primary" style={{
+              width: '100%', padding: '12px', fontSize: 14,
             }}>
               {loading ? 'Please wait...' : mode === 'signin' ? 'Sign in' : 'Create account'}
             </button>

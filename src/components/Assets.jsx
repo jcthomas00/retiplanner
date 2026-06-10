@@ -17,30 +17,24 @@ function AssetForm({ onSave, onCancel, retAge }) {
     onSave({ name, balance: parseFloat(balance), type, color, withdrawal_age: withdrawalAge ? parseInt(withdrawalAge) : null })
   }
 
-  const inputStyle = {
-    width: '100%', padding: '9px 11px', borderRadius: 8,
-    border: '1px solid var(--border)', background: 'var(--bg-page)',
-    color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box'
-  }
-
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12, padding: 14, background: 'var(--bg-page)', borderRadius: 10 }}>
+    <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12, padding: 16, background: 'var(--card-alt)', borderRadius: 'var(--radius-inner)' }}>
       <div>
-        <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Name</label>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Vanguard 401(k)" style={inputStyle} required />
+        <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>Name</label>
+        <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Vanguard 401(k)" required />
       </div>
       <div>
-        <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Balance ($)</label>
-        <input type="number" value={balance} onChange={e => setBalance(e.target.value)} placeholder="0" style={inputStyle} required min="0" />
+        <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>Balance ($)</label>
+        <input className="input" type="number" value={balance} onChange={e => setBalance(e.target.value)} placeholder="0" required min="0" />
       </div>
       <div>
-        <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Type</label>
-        <select value={type} onChange={e => setType(e.target.value)} style={inputStyle}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>Type</label>
+        <select className="input" value={type} onChange={e => setType(e.target.value)}>
           {ASSET_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
       <div>
-        <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Color</label>
+        <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>Color</label>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {ASSET_COLORS.map(c => (
             <button key={c} type="button" onClick={() => setColor(c)} style={{
@@ -52,22 +46,16 @@ function AssetForm({ onSave, onCancel, retAge }) {
         </div>
       </div>
       <div>
-        <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
           Withdrawal age <span style={{ fontWeight: 400 }}>(optional — leave blank to use retirement age)</span>
         </label>
-        <input type="number" value={withdrawalAge} onChange={e => setWithdrawalAge(e.target.value)}
+        <input className="input" type="number" value={withdrawalAge} onChange={e => setWithdrawalAge(e.target.value)}
           placeholder={retAge ? `${retAge} (retirement age)` : 'e.g. 72'}
-          style={inputStyle} min="50" max="90" />
+          min="50" max="90" />
       </div>
       <div style={{ gridColumn: '1/-1', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button type="button" onClick={onCancel} style={{
-          padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)',
-          background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer'
-        }}>Cancel</button>
-        <button type="submit" style={{
-          padding: '8px 16px', borderRadius: 8, border: 'none',
-          background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer'
-        }}>Add asset</button>
+        <button type="button" onClick={onCancel} className="btn btn-ghost" style={{ fontWeight: 500, color: 'var(--text-muted)' }}>Cancel</button>
+        <button type="submit" className="btn btn-primary" style={{ padding: '8px 18px' }}>Add asset</button>
       </div>
     </form>
   )
@@ -78,38 +66,26 @@ export default function Assets({ assets, totalBalance, addAsset, deleteAsset, re
 
   const typeLabel = (t) => ASSET_TYPES.find(x => x.value === t)?.label || t
 
-  const rowStyle = {
-    display: 'flex', alignItems: 'center', gap: 10,
-    padding: '10px 0', borderBottom: '1px solid var(--border)'
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <Collapsible title="Assets" actions={
-        <button onClick={() => setShowAssetForm(v => !v)} style={{
-          display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 10px',
-          borderRadius: 6, border: '1px solid var(--border)', background: 'transparent',
-          color: 'var(--text)', cursor: 'pointer'
-        }}>+ Add asset</button>
+        <button onClick={() => setShowAssetForm(v => !v)} className="btn btn-subtle" style={{ fontSize: 12, padding: '6px 13px' }}>+ Add asset</button>
       }>
         {assets.map(a => (
-          <div key={a.id} style={rowStyle}>
+          <div key={a.id} className="list-row">
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: a.color, flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{a.name}</span>
-            <span style={{
-              fontSize: 11, padding: '2px 8px', borderRadius: 5,
-              background: 'var(--card-alt)', color: 'var(--text-muted)'
-            }}>{typeLabel(a.type)}</span>
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{a.name}</span>
+            <span className="chip">{typeLabel(a.type)}</span>
             {a.withdrawal_age && a.withdrawal_age !== retAge && (
-              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 5, background: 'var(--card-alt)', color: '#BA7517' }}>
+              <span className="chip" style={{ color: 'var(--warning)' }}>
                 withdraw at {a.withdrawal_age}
               </span>
             )}
-            <span style={{ fontSize: 13, fontWeight: 500, minWidth: 90, textAlign: 'right' }}>{fmt(a.balance)}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 36, textAlign: 'right' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, minWidth: 90, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(a.balance)}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-faint)', minWidth: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
               {totalBalance > 0 ? Math.round(Number(a.balance) / totalBalance * 100) : 0}%
             </span>
-            <button onClick={() => deleteAsset(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: '0 2px' }} aria-label="Delete"><FontAwesomeIcon icon={faTrashCan} /></button>
+            <button onClick={() => deleteAsset(a.id)} className="icon-btn danger" aria-label="Delete"><FontAwesomeIcon icon={faTrashCan} /></button>
           </div>
         ))}
 

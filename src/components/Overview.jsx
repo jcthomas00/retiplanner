@@ -17,17 +17,15 @@ function MetricCard({ label, value, sub, color, onClick, active }) {
   return (
     <div
       onClick={onClick}
+      className={`metric-tile${onClick ? ' clickable' : ''}`}
       style={{
-        background: active ? 'var(--accent)' : 'var(--card-alt)',
-        borderRadius: 12, padding: '14px 16px',
-        cursor: onClick ? 'pointer' : 'default',
-        border: active ? '1px solid var(--accent)' : '1px solid transparent',
-        transition: 'background 0.15s',
+        padding: '16px 18px',
+        ...(active ? { background: 'var(--accent)', borderColor: 'var(--accent)' } : {}),
       }}
     >
-      <div style={{ fontSize: 12, color: active ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 600, color: active ? '#fff' : (color || 'var(--text)') }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
+      <div style={{ fontSize: 12, fontWeight: 500, color: active ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)', marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: active ? '#fff' : (color || 'var(--text)') }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.7)' : 'var(--text-faint)', marginTop: 2 }}>{sub}</div>}
     </div>
   )
 }
@@ -117,26 +115,20 @@ export default function Overview({
 
       {/* Import panel — slides in below metric cards */}
       {importOpen && (
-        <div style={{
-          background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14,
+        <div className="card" style={{
           marginBottom: '1.5rem', overflow: 'hidden',
           animation: 'fadeInUp 0.18s ease',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)',
+            padding: '1.1rem 1.4rem', borderBottom: '1px solid var(--border)',
           }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Import from PDF
-            </span>
-            <button onClick={() => setImportOpen(false)} style={{
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              color: 'var(--text-muted)', fontSize: 15, padding: '0 2px',
-            }}>
+            <span className="card-title">Import from PDF</span>
+            <button onClick={() => setImportOpen(false)} className="icon-btn">
               <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
-          <div style={{ padding: '1.25rem' }}>
+          <div style={{ padding: '1.4rem' }}>
             <PDFImport
               addAsset={addAsset}
               addContribution={addContribution}
@@ -150,17 +142,17 @@ export default function Overview({
 
       <div className="ov-wide-row">
         <div className="ov-col ov-col-charts" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Projected growth</div>
+          <div className="card" style={{ padding: '1.4rem' }}>
+            <div className="card-title" style={{ marginBottom: '1rem' }}>Projected growth</div>
             <div style={{ position: 'relative', height: 240 }}>
               <Line data={nwData} options={chartOpts} />
             </div>
           </div>
 
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Allocation</div>
+          <div className="card" style={{ padding: '1.4rem' }}>
+            <div className="card-title" style={{ marginBottom: '1rem' }}>Allocation</div>
             <div style={{ position: 'relative', height: 180 }}>
-              <Doughnut data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } } }, cutout: '62%' }} />
+              <Doughnut data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.label + ': ' + fmtK(c.raw) } } }, cutout: '68%' }} />
             </div>
           </div>
         </div>
