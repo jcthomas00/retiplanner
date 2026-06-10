@@ -11,10 +11,10 @@ ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, 
 
 function Slider({ label, min, max, step, value, display, onChange }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{label}</span>
-        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{display}</span>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{display}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
@@ -25,22 +25,22 @@ function Slider({ label, min, max, step, value, display, onChange }) {
 
 function Section({ title, subtitle, children }) {
   return (
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, marginBottom: '1rem', overflow: 'hidden' }}>
-      <div style={{ padding: '1rem 1.25rem 0.5rem' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>{subtitle}</div>}
+    <div className="card" style={{ marginBottom: '1rem', overflow: 'hidden' }}>
+      <div style={{ padding: '1.2rem 1.4rem 0.5rem' }}>
+        <div className="card-title">{title}</div>
+        {subtitle && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3, fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>{subtitle}</div>}
       </div>
-      <div style={{ padding: '0 1.25rem 1.25rem' }}>{children}</div>
+      <div style={{ padding: '0.5rem 1.4rem 1.4rem' }}>{children}</div>
     </div>
   )
 }
 
 function MetricCard({ label, value, sub, color, compact }) {
   return (
-    <div style={{ background: 'var(--card-alt)', borderRadius: compact ? 10 : 12, padding: compact ? '10px 12px' : '14px 16px' }}>
-      <div style={{ fontSize: compact ? 11 : 12, color: 'var(--text-muted)', marginBottom: compact ? 2 : 4 }}>{label}</div>
-      <div style={{ fontSize: compact ? 17 : 22, fontWeight: 600, color: color || 'var(--text)' }}>{value}</div>
-      {sub && <div style={{ fontSize: compact ? 10 : 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
+    <div className="metric-tile" style={{ padding: compact ? '12px 14px' : '16px 18px' }}>
+      <div style={{ fontSize: compact ? 11 : 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: compact ? 3 : 5 }}>{label}</div>
+      <div style={{ fontSize: compact ? 19 : 24, fontWeight: 700, letterSpacing: '-0.02em', color: color || 'var(--text)' }}>{value}</div>
+      {sub && <div style={{ fontSize: compact ? 10 : 11, color: 'var(--text-faint)', marginTop: 2 }}>{sub}</div>}
     </div>
   )
 }
@@ -129,8 +129,8 @@ export default function Projection({ params, onChange, assets, totalContrib, inc
   const hasBreakdown = incomeSources?.length > 0 || assets.some(a => a.withdrawal_age && a.withdrawal_age > p.retAge)
 
   const chartCard = (
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', marginBottom: '1rem' }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Projected portfolio value</div>
+    <div className="card" style={{ padding: '1.4rem', marginBottom: '1rem' }}>
+      <div className="card-title" style={{ marginBottom: 8 }}>Projected portfolio value</div>
       <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 12, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ width: 10, height: 10, borderRadius: 2, background: '#378ADD' }} />Accumulation

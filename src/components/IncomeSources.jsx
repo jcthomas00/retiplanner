@@ -8,8 +8,8 @@ const SS_FRA = 67
 const SS_AGES = [62, 63, 64, 65, 66, 67, 68, 69, 70]
 
 const inp = {
-  width: '100%', padding: '9px 11px', borderRadius: 8,
-  border: '1px solid var(--border)', background: 'var(--bg-page)',
+  width: '100%', padding: '10px 13px', borderRadius: 10,
+  border: '1px solid var(--border-strong)', background: 'var(--card)',
   color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box',
 }
 
@@ -22,10 +22,10 @@ function SSPreview({ monthlyAtBase, baseAge, startAge, benefitTable }) {
   const pctVsFRA = ((ssClaimingFactor(startAge) / ssClaimingFactor(SS_FRA) - 1) * 100).toFixed(1)
   const color = startAge >= SS_FRA ? '#1D9E75' : '#BA7517'
   return (
-    <div style={{ gridColumn: '1/-1', background: 'var(--card-alt)', borderRadius: 8, padding: '10px 14px', fontSize: 12, display: 'grid', gap: 4 }}>
+    <div style={{ gridColumn: '1/-1', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 12, display: 'grid', gap: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ color: 'var(--text-muted)' }}>
-          Benefit at age {startAge}{fromTable != null && <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--accent)', color: '#fff' }}>from your statement</span>}
+          Benefit at age {startAge}{fromTable != null && <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 8px', borderRadius: 999, background: 'var(--accent)', color: '#fff' }}>from your statement</span>}
         </span>
         <span style={{ fontWeight: 700, color, fontSize: 14 }}>{fmt(adjusted)}/mo · {fmtK(adjusted * 12)}/yr</span>
       </div>
@@ -129,10 +129,10 @@ function TablePreview({ startAge, table }) {
   const fromTable = benefitFromTable(table, startAge)
   if (fromTable == null) return null
   return (
-    <div style={{ gridColumn: '1/-1', background: 'var(--card-alt)', borderRadius: 8, padding: '10px 14px', fontSize: 12, display: 'grid', gap: 4 }}>
+    <div style={{ gridColumn: '1/-1', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 12, display: 'grid', gap: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ color: 'var(--text-muted)' }}>
-          Benefit at age {startAge}<span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--accent)', color: '#fff' }}>from your statement</span>
+          Benefit at age {startAge}<span style={{ marginLeft: 6, fontSize: 10, padding: '1px 8px', borderRadius: 999, background: 'var(--accent)', color: '#fff' }}>from your statement</span>
         </span>
         <span style={{ fontWeight: 700, color: '#1D9E75', fontSize: 14 }}>{fmt(fromTable)}/mo · {fmtK(fromTable * 12)}/yr</span>
       </div>
@@ -157,7 +157,7 @@ function IncomeForm({ onSave, onCancel, defaultStartAge }) {
 
   return (
     <form onSubmit={e => { e.preventDefault(); if (!name || !monthlyAmount) return; onSave({ type, name, monthly_amount: parseFloat(monthlyAmount), base_age: baseAge, start_age: startAge, cola_pct: colaPct, ...((isSS || isPensionLike) ? { benefit_table: benefitTable } : {}) }) }}
-      style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12, padding: 14, background: 'var(--bg-page)', borderRadius: 10 }}>
+      style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12, padding: 16, background: 'var(--card-alt)', borderRadius: 'var(--radius-inner)' }}>
       <div>
         <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Type</label>
         <select value={type} onChange={e => setType(e.target.value)} style={inp}>
@@ -227,8 +227,8 @@ function IncomeForm({ onSave, onCancel, defaultStartAge }) {
       )}
 
       <div style={{ gridColumn: '1/-1', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button type="button" onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-        <button type="submit" style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Add</button>
+        <button type="button" onClick={onCancel} className="btn btn-ghost" style={{ fontWeight: 500, color: 'var(--text-muted)' }}>Cancel</button>
+        <button type="submit" className="btn btn-primary" style={{ padding: '8px 18px' }}>Add</button>
       </div>
     </form>
   )
@@ -276,9 +276,9 @@ function IncomeSourceEditor({ source, onSave, onCancel }) {
       {isSS && <SSPreview monthlyAtBase={monthlyAmount} baseAge={baseAge} startAge={startAge} benefitTable={benefitTable} />}
       {isPensionLike && <TablePreview startAge={startAge} table={benefitTable} />}
       <div style={{ gridColumn: '1/-1', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button onClick={onCancel} style={{ padding: '6px 14px', borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+        <button onClick={onCancel} className="btn btn-ghost" style={{ fontSize: 12, padding: '6px 14px', fontWeight: 500, color: 'var(--text-muted)' }}>Cancel</button>
         <button onClick={() => onSave({ monthly_amount: monthlyAmount, base_age: baseAge, start_age: startAge, cola_pct: colaPct, ...((isSS || isPensionLike) ? { benefit_table: benefitTable } : {}) })}
-          style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Save</button>
+          className="btn btn-primary" style={{ fontSize: 12, padding: '6px 16px' }}>Save</button>
       </div>
     </div>
   )
@@ -293,7 +293,7 @@ export default function IncomeSources({ incomeSources, addIncomeSource, updateIn
     <Collapsible
       title="Guaranteed Income"
       actions={
-        <button onClick={() => setShowForm(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer' }}>
+        <button onClick={() => setShowForm(v => !v)} className="btn btn-subtle" style={{ fontSize: 12, padding: '6px 13px' }}>
           + Add
         </button>
       }
@@ -309,7 +309,7 @@ export default function IncomeSources({ incomeSources, addIncomeSource, updateIn
       {incomeSources.map(src => {
         const monthly = effectiveMonthly(src)
         return (
-          <div key={src.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+          <div key={src.id} style={{ padding: '2px 0' }}>
             {editing === src.id ? (
               <IncomeSourceEditor
                 source={src}
@@ -317,11 +317,11 @@ export default function IncomeSources({ incomeSources, addIncomeSource, updateIn
                 onCancel={() => setEditing(null)}
               />
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div className="list-row">
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{src.name}</span>
-                    <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 5, background: 'var(--card-alt)', color: 'var(--text-muted)' }}>{typeLabel(src.type)}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600 }}>{src.name}</span>
+                    <span className="chip">{typeLabel(src.type)}</span>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                     Starts age {src.start_age}
@@ -333,11 +333,11 @@ export default function IncomeSources({ incomeSources, addIncomeSource, updateIn
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{fmt(monthly)}/mo</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtK(monthly * 12)}/yr</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{fmt(monthly)}/mo</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{fmtK(monthly * 12)}/yr</div>
                 </div>
-                <button onClick={() => setEditing(src.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 13, padding: '0 4px' }} title="Edit">✎</button>
-                <button onClick={() => deleteIncomeSource(src.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, padding: '0 2px' }}>✕</button>
+                <button onClick={() => setEditing(src.id)} className="icon-btn" title="Edit">✎</button>
+                <button onClick={() => deleteIncomeSource(src.id)} className="icon-btn danger">✕</button>
               </div>
             )}
           </div>

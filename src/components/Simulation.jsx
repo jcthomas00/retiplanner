@@ -10,23 +10,23 @@ ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, 
 
 function MetricCard({ label, value, sub, color }) {
   return (
-    <div style={{ background: 'var(--card-alt)', borderRadius: 12, padding: '14px 16px' }}>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 600, color: color || 'var(--text)' }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
+    <div className="metric-tile" style={{ padding: '16px 18px' }}>
+      <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: color || 'var(--text)' }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{sub}</div>}
     </div>
   )
 }
 
 function OutcomeBar({ label, pct, color }) {
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-        <span style={{ color: 'var(--text)' }}>{label}</span>
-        <span style={{ fontWeight: 600, color }}>{pct.toFixed(1)}%</span>
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+        <span style={{ color: 'var(--text)', fontWeight: 500 }}>{label}</span>
+        <span style={{ fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{pct.toFixed(1)}%</span>
       </div>
-      <div style={{ height: 6, background: 'var(--card-alt)', borderRadius: 3 }}>
-        <div style={{ height: 6, borderRadius: 3, background: color, width: `${Math.min(100, pct)}%`, transition: 'width 0.4s' }} />
+      <div style={{ height: 8, background: 'var(--card-alt)', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ height: 8, borderRadius: 4, background: color, width: `${Math.min(100, pct)}%`, transition: 'width 0.4s ease' }} />
       </div>
     </div>
   )
@@ -75,34 +75,30 @@ export default function Simulation({ params, onChange, assets, totalContrib, inc
 
   return (
     <div>
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', marginBottom: '1rem' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Monte Carlo settings</div>
+      <div className="card" style={{ padding: '1.4rem', marginBottom: '1rem' }}>
+        <div className="card-title" style={{ marginBottom: '1.1rem' }}>Monte Carlo settings</div>
 
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Return volatility (std dev)</span>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{vol.toFixed(1)}%</span>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>Return volatility (std dev)</span>
+            <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{vol.toFixed(1)}%</span>
           </div>
           <input type="range" min={1} max={20} step={0.5} value={vol}
             onChange={e => setVol(parseFloat(e.target.value))}
             style={{ width: '100%', display: 'block', accentColor: 'var(--accent)' }} />
         </div>
 
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Number of simulations</span>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{numSims}</span>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>Number of simulations</span>
+            <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{numSims}</span>
           </div>
           <input type="range" min={100} max={2000} step={100} value={numSims}
             onChange={e => setNumSims(parseInt(e.target.value))}
             style={{ width: '100%', display: 'block', accentColor: 'var(--accent)' }} />
         </div>
 
-        <button onClick={run} disabled={running} style={{
-          padding: '10px 24px', borderRadius: 8, border: 'none',
-          background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600,
-          cursor: running ? 'not-allowed' : 'pointer', opacity: running ? 0.7 : 1
-        }}>
+        <button onClick={run} disabled={running} className="btn btn-primary">
           {running ? 'Running...' : `Run ${numSims.toLocaleString()} simulations`}
         </button>
       </div>
@@ -124,8 +120,8 @@ export default function Simulation({ params, onChange, assets, totalContrib, inc
             <MetricCard label="Worst 10% outcome" value={p10Final > 0 ? fmtK(p10Final) : '$0'} color={p10Final > 0 ? '#BA7517' : '#A32D2D'} />
           </div>
 
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', marginBottom: '1rem' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Simulation bands</div>
+          <div className="card" style={{ padding: '1.4rem', marginBottom: '1rem' }}>
+            <div className="card-title" style={{ marginBottom: 8 }}>Simulation bands</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 12, fontSize: 12, color: 'var(--text-muted)' }}>
               {[['#9FE1CB','90th pct'],['#1D9E75','75th pct'],['#1D9E75','Median (dashed)'],['#FAC775','25th pct'],['#EF9F27','10th pct']].map(([c,l]) => (
                 <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -145,8 +141,8 @@ export default function Simulation({ params, onChange, assets, totalContrib, inc
             </div>
           </div>
 
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Outcome distribution</div>
+          <div className="card" style={{ padding: '1.4rem' }}>
+            <div className="card-title" style={{ marginBottom: '1rem' }}>Outcome distribution</div>
             {outcomes.map(o => <OutcomeBar key={o.label} {...o} />)}
           </div>
         </>
