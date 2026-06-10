@@ -5,6 +5,7 @@ import {
 } from 'chart.js'
 import { useState } from 'react'
 import { fmtK, fmt, buildProjection, calcDepletionAge, effectiveMonthly, benefitFromTable } from '../lib/finance'
+import { verticalGradient, crosshairGlow, glassTooltip, axisStyle } from '../lib/chartTheme'
 import Contributions from './Contributions'
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
@@ -108,13 +109,13 @@ export default function Projection({ params, onChange, assets, totalContrib, inc
     datasets: [
       {
         label: 'Accumulation', data: preData, borderColor: '#378ADD',
-        borderWidth: 2.5, pointRadius: 0, fill: true,
-        backgroundColor: 'rgba(55,138,221,0.07)', spanGaps: true, tension: 0.3,
+        borderWidth: 2.5, pointRadius: 0, pointHitRadius: 20, fill: true,
+        backgroundColor: verticalGradient('#378ADD', 0.25), spanGaps: true, tension: 0.3,
       },
       {
         label: 'Withdrawal', data: postData, borderColor: '#1D9E75',
-        borderWidth: 2.5, pointRadius: 0, fill: true,
-        backgroundColor: 'rgba(29,158,117,0.07)', spanGaps: true, tension: 0.3,
+        borderWidth: 2.5, pointRadius: 0, pointHitRadius: 20, fill: true,
+        backgroundColor: verticalGradient('#1D9E75', 0.25), spanGaps: true, tension: 0.3,
       },
     ],
   }
@@ -144,8 +145,8 @@ export default function Projection({ params, onChange, assets, totalContrib, inc
           </span>
         )}
       </div>
-      <div style={{ position: 'relative', height: 280 }}>
-        <Line data={chartData} options={{
+      <div className="chart-glass" style={{ height: 290 }}>
+        <Line data={chartData} plugins={[crosshairGlow]} options={{
           responsive: true, maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           onClick: (_evt, elements, chart) => {
@@ -156,6 +157,7 @@ export default function Projection({ params, onChange, assets, totalContrib, inc
           plugins: {
             legend: { display: false },
             tooltip: {
+              enabled: false, external: glassTooltip,
               filter: item => item.raw != null,
               callbacks: {
                 title: items => `Age ${items[0]?.label}`,
@@ -175,10 +177,7 @@ export default function Projection({ params, onChange, assets, totalContrib, inc
               },
             },
           },
-          scales: {
-            x: { ticks: { maxTicksLimit: 8, font: { size: 11 } }, grid: { display: false } },
-            y: { ticks: { callback: v => fmtK(v), font: { size: 11 } }, grid: { color: 'rgba(128,128,128,0.08)' } },
-          },
+          scales: axisStyle(v => fmtK(v)),
         }} />
       </div>
     </div>

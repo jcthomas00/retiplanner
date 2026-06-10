@@ -5,6 +5,7 @@ import {
   LinearScale, CategoryScale, Filler, Tooltip
 } from 'chart.js'
 import { fmtK, runMonteCarlo } from '../lib/finance'
+import { crosshairGlow, glassTooltip, axisStyle } from '../lib/chartTheme'
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
 
@@ -57,11 +58,11 @@ export default function Simulation({ params, onChange, assets, totalContrib, inc
   const chartData = results ? {
     labels: results.labels,
     datasets: [
-      { label: '90th pct', data: results.bands[4], borderColor: '#9FE1CB', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 },
-      { label: '75th pct', data: results.bands[3], borderColor: '#1D9E75', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 },
-      { label: 'Median', data: results.bands[2], borderColor: '#1D9E75', borderWidth: 2.5, pointRadius: 0, borderDash: [4, 3], fill: false, tension: 0.3 },
-      { label: '25th pct', data: results.bands[1], borderColor: '#FAC775', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 },
-      { label: '10th pct', data: results.bands[0], borderColor: '#EF9F27', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: '90th pct', data: results.bands[4], borderColor: '#9FE1CB', borderWidth: 1.5, pointRadius: 0, pointHitRadius: 14, fill: false, tension: 0.3 },
+      { label: '75th pct', data: results.bands[3], borderColor: '#1D9E75', borderWidth: 1.5, pointRadius: 0, pointHitRadius: 14, fill: '-1', backgroundColor: 'rgba(29,158,117,0.10)', tension: 0.3 },
+      { label: 'Median', data: results.bands[2], borderColor: '#1D9E75', borderWidth: 2.5, pointRadius: 0, pointHitRadius: 14, borderDash: [4, 3], fill: '-1', backgroundColor: 'rgba(29,158,117,0.16)', tension: 0.3 },
+      { label: '25th pct', data: results.bands[1], borderColor: '#FAC775', borderWidth: 1.5, pointRadius: 0, pointHitRadius: 14, fill: '-1', backgroundColor: 'rgba(250,199,117,0.14)', tension: 0.3 },
+      { label: '10th pct', data: results.bands[0], borderColor: '#EF9F27', borderWidth: 1.5, pointRadius: 0, pointHitRadius: 14, fill: '-1', backgroundColor: 'rgba(239,159,39,0.10)', tension: 0.3 },
     ]
   } : null
 
@@ -129,14 +130,18 @@ export default function Simulation({ params, onChange, assets, totalContrib, inc
                 </span>
               ))}
             </div>
-            <div style={{ position: 'relative', height: 300 }}>
-              <Line data={chartData} options={{
+            <div className="chart-glass" style={{ height: 310 }}>
+              <Line data={chartData} plugins={[crosshairGlow]} options={{
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.dataset.label + ': ' + fmtK(c.raw) } } },
-                scales: {
-                  x: { ticks: { maxTicksLimit: 8, font: { size: 11 } }, grid: { display: false } },
-                  y: { ticks: { callback: v => fmtK(v), font: { size: 11 } }, grid: { color: 'rgba(128,128,128,0.08)' } }
-                }
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    enabled: false, external: glassTooltip,
+                    callbacks: { title: items => `Age ${items[0]?.label}`, label: c => c.dataset.label + ': ' + fmtK(c.raw) },
+                  },
+                },
+                scales: axisStyle(v => fmtK(v)),
               }} />
             </div>
           </div>
