@@ -11,12 +11,14 @@ ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, 
 
 function Slider({ label, min, max, step, value, display, onChange }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-      <span style={{ fontSize: 13, color: 'var(--text-muted)', minWidth: 200 }}>{label}</span>
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{display}</span>
+      </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
-        style={{ flex: 1, accentColor: 'var(--accent)' }} />
-      <span style={{ fontSize: 13, fontWeight: 500, minWidth: 70, textAlign: 'right', color: 'var(--text)' }}>{display}</span>
+        style={{ width: '100%', display: 'block', accentColor: 'var(--accent)' }} />
     </div>
   )
 }
@@ -54,12 +56,12 @@ function ClaimingAgeControl({ source, onCommit }) {
 
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4, gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 13, color: 'var(--text)' }}>
           {source.name} — claim/start at age <strong>{age}</strong>
           {fromTable != null && <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--accent)', color: '#fff' }}>from your statement</span>}
         </span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#1D9E75' }}>{fmt(monthly)}/mo · {fmtK(monthly * 12)}/yr</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#1D9E75', whiteSpace: 'nowrap' }}>{fmt(monthly)}/mo · {fmtK(monthly * 12)}/yr</span>
       </div>
       <input type="range" min={min} max={max} step={1} value={age}
         onChange={e => setAge(parseInt(e.target.value))}
