@@ -14,6 +14,7 @@ export function useDashboard() {
   const [contributions, setContributions] = useState([])
   const [incomeSources, setIncomeSources] = useState([])
   const [params, setParams] = useState(DEFAULT_PARAMS)
+  const [assetHistory, setAssetHistory] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -21,14 +22,23 @@ export function useDashboard() {
     if (!user) return
     setLoading(true)
     try {
-      const [assetsRes, contribsRes, paramsRes, incomeRes] = await Promise.all([
+      const [assetsRes, contribsRes, paramsRes, incomeRes, historyRes] = await Promise.all([
         supabase.from('assets').select('*').eq('user_id', user.id).order('created_at'),
         supabase.from('contributions').select('*').eq('user_id', user.id).order('created_at'),
         supabase.from('projection_params').select('*').eq('user_id', user.id).single(),
         supabase.from('income_sources').select('*').eq('user_id', user.id).order('created_at'),
+        supabase.from('asset_balance_history').select('asset_id,balance,recorded_at').eq('user_id', user.id).order('recorded_at'),
       ])
 
       setAssets(assetsRes.data || [])
+
+      // Group history by asset_id
+      const hist = {}
+      for (const row of historyRes.data || []) {
+        if (!hist[row.asset_id]) hist[row.asset_id] = []
+        hist[row.asset_id].push({ balance: row.balance, recorded_at: row.recorded_at })
+      }
+      setAssetHistory(hist)
       setContributions(contribsRes.data || [])
 
       if (paramsRes.data) {
@@ -65,6 +75,19 @@ export function useDashboard() {
     }, { onConflict: 'user_id' })
   }, [user])
 
+  const recordBalanceSnapshot = useCallback(async (assetId, balance) => {
+    if (!user) return
+    const { data } = await supabase.from('asset_balance_history')
+      .insert({ asset_id: assetId, user_id: user.id, balance: Number(balance) })
+      .select('asset_id,balance,recorded_at').single()
+    if (data) {
+      setAssetHistory(prev => ({
+        ...prev,
+        [assetId]: [...(prev[assetId] || []), { balance: data.balance, recorded_at: data.recorded_at }],
+      }))
+    }
+  }, [user])
+
   const addAsset = useCallback(async (asset) => {
     if (!user) return
     setSaving(true)
@@ -79,16 +102,22 @@ export function useDashboard() {
     const { data, error } = await supabase.from('assets')
       .insert(row).select().single()
     if (error) console.error('addAsset failed:', error.message)
-    if (data) setAssets(prev => [...prev, data])
+    if (data) {
+      setAssets(prev => [...prev, data])
+      await recordBalanceSnapshot(data.id, data.balance)
+    }
     setSaving(false)
-  }, [user])
+  }, [user, recordBalanceSnapshot])
 
   const updateAsset = useCallback(async (id, updates) => {
     if (!user) return
     const { data } = await supabase.from('assets')
       .update(updates).eq('id', id).eq('user_id', user.id).select().single()
-    if (data) setAssets(prev => prev.map(a => a.id === id ? data : a))
-  }, [user])
+    if (data) {
+      setAssets(prev => prev.map(a => a.id === id ? data : a))
+      if (updates.balance != null) await recordBalanceSnapshot(id, updates.balance)
+    }
+  }, [user, recordBalanceSnapshot])
 
   const deleteAsset = useCallback(async (id) => {
     if (!user) return
@@ -160,6 +189,7 @@ export function useDashboard() {
 
   return {
     assets, contributions, incomeSources, params, loading, saving,
+    assetHistory,
     totalBalance, totalContrib, retirementBalance, investableBalance,
     saveParams,
     addAsset, updateAsset, deleteAsset,

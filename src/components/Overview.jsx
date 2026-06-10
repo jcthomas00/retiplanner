@@ -33,7 +33,7 @@ function MetricCard({ label, value, sub, color, onClick, active }) {
 
 export default function Overview({
   assets, params, totalBalance, investableBalance, totalContrib,
-  addAsset, deleteAsset,
+  addAsset, updateAsset, deleteAsset, assetHistory,
   addContribution, addIncomeSource, updateIncomeSource, deleteIncomeSource,
   incomeSources, saveParams,
 }) {
@@ -181,7 +181,9 @@ export default function Overview({
             assets={assets}
             totalBalance={totalBalance}
             addAsset={addAsset}
+            updateAsset={updateAsset}
             deleteAsset={deleteAsset}
+            assetHistory={assetHistory}
             retAge={params.retAge}
           />
           <IncomeSources

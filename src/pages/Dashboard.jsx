@@ -171,7 +171,9 @@ export default function Dashboard() {
                 investableBalance={dash.investableBalance}
                 totalContrib={dash.totalContrib}
                 addAsset={dash.addAsset}
+                updateAsset={dash.updateAsset}
                 deleteAsset={dash.deleteAsset}
+                assetHistory={dash.assetHistory}
                 addContribution={dash.addContribution}
                 incomeSources={dash.incomeSources}
                 addIncomeSource={dash.addIncomeSource}

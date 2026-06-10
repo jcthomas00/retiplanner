@@ -1,8 +1,16 @@
 import { useState } from 'react'
+import { Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS, LineElement, PointElement,
+  LinearScale, CategoryScale, Filler, Tooltip
+} from 'chart.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { fmt, ASSET_COLORS, ASSET_TYPES } from '../lib/finance'
+import { faTrashCan, faChevronDown, faChevronUp, faPen, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { fmt, fmtK, ASSET_COLORS, ASSET_TYPES } from '../lib/finance'
+import { verticalGradient, crosshairGlow, glassTooltip, axisStyle } from '../lib/chartTheme'
 import Collapsible from './Collapsible'
+
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
 
 function AssetForm({ onSave, onCancel, retAge }) {
   const [name, setName] = useState('')
@@ -61,33 +69,167 @@ function AssetForm({ onSave, onCancel, retAge }) {
   )
 }
 
-export default function Assets({ assets, totalBalance, addAsset, deleteAsset, retAge }) {
+function BalanceTrendChart({ history, color }) {
+  if (!history || history.length < 2) {
+    return (
+      <div style={{ padding: '18px 0 6px', textAlign: 'center', color: 'var(--text-faint)', fontSize: 12 }}>
+        No history yet — update the balance to start tracking trends.
+      </div>
+    )
+  }
+
+  const labels = history.map(h => {
+    const d = new Date(h.recorded_at)
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })
+  })
+  const data = history.map(h => Number(h.balance))
+  const chartData = {
+    labels,
+    datasets: [{
+      data,
+      borderColor: color || '#1D9E75',
+      borderWidth: 2,
+      pointRadius: data.length <= 12 ? 3 : 0,
+      pointHitRadius: 16,
+      fill: true,
+      backgroundColor: verticalGradient(color || '#1D9E75', 0.25),
+      tension: 0.35,
+    }]
+  }
+
+  return (
+    <div className="chart-glass" style={{ height: 160, marginTop: 12 }}>
+      <Line data={chartData} plugins={[crosshairGlow]} options={{
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: false, external: glassTooltip,
+            callbacks: { label: c => fmtK(c.raw) },
+          },
+        },
+        scales: axisStyle(v => fmtK(v)),
+      }} />
+    </div>
+  )
+}
+
+function EditBalanceForm({ asset, onSave, onCancel }) {
+  const [balance, setBalance] = useState(String(asset.balance))
+  return (
+    <form onSubmit={e => { e.preventDefault(); onSave(parseFloat(balance)) }}
+      style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <input
+        className="input"
+        type="number"
+        value={balance}
+        onChange={e => setBalance(e.target.value)}
+        style={{ width: 120, padding: '5px 10px', fontSize: 13 }}
+        autoFocus
+        min="0"
+        required
+      />
+      <button type="submit" className="icon-btn" aria-label="Save" style={{ color: 'var(--accent)' }}>
+        <FontAwesomeIcon icon={faCheck} />
+      </button>
+      <button type="button" onClick={onCancel} className="icon-btn" aria-label="Cancel">
+        <FontAwesomeIcon icon={faXmark} />
+      </button>
+    </form>
+  )
+}
+
+export default function Assets({ assets, totalBalance, addAsset, updateAsset, deleteAsset, assetHistory, retAge }) {
   const [showAssetForm, setShowAssetForm] = useState(false)
+  const [expandedId, setExpandedId] = useState(null)
+  const [editingBalanceId, setEditingBalanceId] = useState(null)
 
   const typeLabel = (t) => ASSET_TYPES.find(x => x.value === t)?.label || t
+
+  const handleSaveBalance = async (asset, newBalance) => {
+    await updateAsset(asset.id, { balance: newBalance })
+    setEditingBalanceId(null)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <Collapsible title="Assets" actions={
         <button onClick={() => setShowAssetForm(v => !v)} className="btn btn-subtle" style={{ fontSize: 12, padding: '6px 13px' }}>+ Add asset</button>
       }>
-        {assets.map(a => (
-          <div key={a.id} className="list-row">
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: a.color, flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{a.name}</span>
-            <span className="chip">{typeLabel(a.type)}</span>
-            {a.withdrawal_age && a.withdrawal_age !== retAge && (
-              <span className="chip" style={{ color: 'var(--warning)' }}>
-                withdraw at {a.withdrawal_age}
-              </span>
-            )}
-            <span style={{ fontSize: 13, fontWeight: 600, minWidth: 90, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(a.balance)}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)', minWidth: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-              {totalBalance > 0 ? Math.round(Number(a.balance) / totalBalance * 100) : 0}%
-            </span>
-            <button onClick={() => deleteAsset(a.id)} className="icon-btn danger" aria-label="Delete"><FontAwesomeIcon icon={faTrashCan} /></button>
-          </div>
-        ))}
+        {assets.map(a => {
+          const isExpanded = expandedId === a.id
+          const hist = assetHistory?.[a.id] || []
+          return (
+            <div key={a.id}>
+              <div
+                className="list-row"
+                style={{ cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => setExpandedId(isExpanded ? null : a.id)}
+              >
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: a.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{a.name}</span>
+                <span className="chip">{typeLabel(a.type)}</span>
+                {a.withdrawal_age && a.withdrawal_age !== retAge && (
+                  <span className="chip" style={{ color: 'var(--warning)' }}>
+                    withdraw at {a.withdrawal_age}
+                  </span>
+                )}
+                {editingBalanceId === a.id ? (
+                  <span onClick={e => e.stopPropagation()}>
+                    <EditBalanceForm
+                      asset={a}
+                      onSave={b => handleSaveBalance(a, b)}
+                      onCancel={() => setEditingBalanceId(null)}
+                    />
+                  </span>
+                ) : (
+                  <span
+                    style={{ fontSize: 13, fontWeight: 600, minWidth: 90, textAlign: 'right', fontVariantNumeric: 'tabular-nums', cursor: 'text' }}
+                    onClick={e => { e.stopPropagation(); setEditingBalanceId(a.id); setExpandedId(a.id) }}
+                    title="Click to update balance"
+                  >
+                    {fmt(a.balance)}
+                  </span>
+                )}
+                <span style={{ fontSize: 12, color: 'var(--text-faint)', minWidth: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {totalBalance > 0 ? Math.round(Number(a.balance) / totalBalance * 100) : 0}%
+                </span>
+                <button
+                  onClick={e => { e.stopPropagation(); setEditingBalanceId(a.id === editingBalanceId ? null : a.id); setExpandedId(a.id) }}
+                  className="icon-btn"
+                  aria-label="Edit balance"
+                  title="Update balance"
+                  style={{ fontSize: 11 }}
+                >
+                  <FontAwesomeIcon icon={faPen} />
+                </button>
+                <button onClick={e => { e.stopPropagation(); deleteAsset(a.id) }} className="icon-btn danger" aria-label="Delete">
+                  <FontAwesomeIcon icon={faTrashCan} />
+                </button>
+                <span style={{ color: 'var(--text-faint)', fontSize: 11, marginLeft: -4 }}>
+                  <FontAwesomeIcon icon={isExpanded ? faChevronUp : faChevronDown} />
+                </span>
+              </div>
+
+              {isExpanded && (
+                <div style={{ padding: '4px 6px 10px', animation: 'fadeInUp 0.18s ease' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                      Balance history
+                    </span>
+                    {hist.length >= 2 && (
+                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                        {hist.length} snapshots
+                      </span>
+                    )}
+                  </div>
+                  <BalanceTrendChart history={hist} color={a.color} />
+                </div>
+              )}
+            </div>
+          )
+        })}
 
         {assets.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No assets yet. Add one below.</p>}
         {showAssetForm && <AssetForm retAge={retAge} onSave={async (a) => { await addAsset(a); setShowAssetForm(false) }} onCancel={() => setShowAssetForm(false)} />}
